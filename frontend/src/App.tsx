@@ -1,6 +1,25 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppLayout, AuthLayout, PublicLayout } from '@/components/layout';
-import { Dashboard, Upload, Videos, VideoDetail, Verify, Settings, Organization, ApiKeys, Billing, Login, Signup, HomePage, HowItWorks, Pricing } from '@/pages';
+import {
+  Dashboard,
+  Upload,
+  Videos,
+  VideoDetail,
+  Verify,
+  Settings,
+  Organization,
+  ApiKeys,
+  Billing,
+  Login,
+  Signup,
+  HomePage,
+  HowItWorks,
+  Pricing,
+  Marketplace,
+  NFTDetail,
+  MyListings,
+  Wallet,
+} from '@/pages';
 import { ROUTES } from '@/config/constants';
 import { Web3Provider } from '@/lib/web3';
 
@@ -32,6 +51,8 @@ function App() {
             <Route path={ROUTES.verify} element={<Verify />} />
             <Route path={ROUTES.howItWorks} element={<HowItWorks />} />
             <Route path={ROUTES.pricing} element={<Pricing />} />
+            <Route path={ROUTES.marketplace} element={<Marketplace />} />
+            <Route path="/marketplace/:id" element={<NFTDetail />} />
             <Route path="*" element={<NotFound />} />
           </Route>
 
@@ -51,6 +72,9 @@ function App() {
             <Route path={ROUTES.apiKeys} element={<ApiKeys />} />
             <Route path={ROUTES.billing} element={<Billing />} />
             <Route path={ROUTES.organization} element={<Organization />} />
+            {/* Marketplace routes (protected) */}
+            <Route path={ROUTES.myListings} element={<MyListings />} />
+            <Route path={ROUTES.wallet} element={<Wallet />} />
           </Route>
         </Routes>
       </BrowserRouter>
