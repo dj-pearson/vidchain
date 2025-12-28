@@ -1,6 +1,34 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AppLayout, AuthLayout, PublicLayout } from '@/components/layout';
-import { Dashboard, Upload, Videos, VideoDetail, Verify, Settings, Organization, ApiKeys, Billing, Login, Signup, HomePage, HowItWorks, Pricing } from '@/pages';
+import { AppLayout, AuthLayout, PublicLayout, AdminLayout } from '@/components/layout';
+import {
+  Dashboard,
+  Upload,
+  Videos,
+  VideoDetail,
+  Verify,
+  Settings,
+  Organization,
+  ApiKeys,
+  Billing,
+  Login,
+  Signup,
+  HomePage,
+  HowItWorks,
+  Pricing,
+  Marketplace,
+  NFTDetail,
+  MyListings,
+  Wallet,
+} from '@/pages';
+import {
+  AdminOverview,
+  AdminUsers,
+  AdminContent,
+  AdminModeration,
+  AdminMarketplace,
+  AdminFinance,
+} from '@/pages/admin';
+import { DMCASubmit } from '@/pages/dmca';
 import { ROUTES } from '@/config/constants';
 import { Web3Provider } from '@/lib/web3';
 
@@ -32,6 +60,10 @@ function App() {
             <Route path={ROUTES.verify} element={<Verify />} />
             <Route path={ROUTES.howItWorks} element={<HowItWorks />} />
             <Route path={ROUTES.pricing} element={<Pricing />} />
+            <Route path={ROUTES.marketplace} element={<Marketplace />} />
+            <Route path="/marketplace/:id" element={<NFTDetail />} />
+            {/* DMCA routes (public) */}
+            <Route path={ROUTES.dmcaSubmit} element={<DMCASubmit />} />
             <Route path="*" element={<NotFound />} />
           </Route>
 
@@ -51,6 +83,19 @@ function App() {
             <Route path={ROUTES.apiKeys} element={<ApiKeys />} />
             <Route path={ROUTES.billing} element={<Billing />} />
             <Route path={ROUTES.organization} element={<Organization />} />
+            {/* Marketplace routes (protected) */}
+            <Route path={ROUTES.myListings} element={<MyListings />} />
+            <Route path={ROUTES.wallet} element={<Wallet />} />
+          </Route>
+
+          {/* Admin routes */}
+          <Route element={<AdminLayout />}>
+            <Route path={ROUTES.adminDashboard} element={<AdminOverview />} />
+            <Route path={ROUTES.adminUsers} element={<AdminUsers />} />
+            <Route path={ROUTES.adminContent} element={<AdminContent />} />
+            <Route path={ROUTES.adminModeration} element={<AdminModeration />} />
+            <Route path={ROUTES.adminMarketplace} element={<AdminMarketplace />} />
+            <Route path={ROUTES.adminFinance} element={<AdminFinance />} />
           </Route>
         </Routes>
       </BrowserRouter>

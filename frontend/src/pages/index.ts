@@ -12,3 +12,5 @@ export { Signup } from './auth/Signup';
 export { HomePage } from './HomePage';
 export { HowItWorks } from './HowItWorks';
 export { Pricing } from './Pricing';
+// Marketplace
+export { Marketplace, NFTDetail, MyListings, Wallet } from './marketplace';

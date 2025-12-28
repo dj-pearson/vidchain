@@ -109,7 +109,61 @@ export const ROUTES = {
   signup: '/signup',
   forgotPassword: '/forgot-password',
   resetPassword: '/reset-password',
+  // Marketplace routes
+  marketplace: '/marketplace',
+  nft: (id: string) => `/marketplace/${id}`,
+  myListings: '/my-listings',
+  createListing: '/create-listing',
+  myOffers: '/my-offers',
+  // Wallet/Token routes
+  wallet: '/wallet',
+  staking: '/staking',
+  rewards: '/rewards',
+  // Admin routes
+  adminDashboard: '/admin',
+  adminUsers: '/admin/users',
+  adminUser: (id: string) => `/admin/users/${id}`,
+  adminContent: '/admin/content',
+  adminModeration: '/admin/moderation',
+  adminMarketplace: '/admin/marketplace',
+  adminFinance: '/admin/finance',
+  adminTokens: '/admin/tokens',
+  adminAnalytics: '/admin/analytics',
+  adminAuditLogs: '/admin/audit-logs',
+  adminSettings: '/admin/settings',
+  // DMCA routes
+  dmcaSubmit: '/dmca/submit',
+  dmcaPolicy: '/dmca/policy',
+  dmcaCounter: '/dmca/counter',
+  dmcaMyClaims: '/dmca/my-claims',
 } as const;
+
+// Token Contract Addresses
+export const VCT_CONTRACT_ADDRESS = import.meta.env.VITE_VCT_CONTRACT_ADDRESS || '';
+export const VIDC_CONTRACT_ADDRESS = import.meta.env.VITE_VIDC_CONTRACT_ADDRESS || '';
+export const MARKETPLACE_CONTRACT_ADDRESS = import.meta.env.VITE_MARKETPLACE_CONTRACT_ADDRESS || '';
+
+// Marketplace Configuration
+export const MARKETPLACE_CONFIG = {
+  platformFeeBps: 250, // 2.5%
+  minListingPrice: '0.001', // ETH
+  auctionDurations: [
+    { label: '1 Hour', value: 3600 },
+    { label: '6 Hours', value: 21600 },
+    { label: '24 Hours', value: 86400 },
+    { label: '3 Days', value: 259200 },
+    { label: '7 Days', value: 604800 },
+  ],
+  offerDurations: [
+    { label: '1 Hour', value: 3600 },
+    { label: '24 Hours', value: 86400 },
+    { label: '7 Days', value: 604800 },
+    { label: '30 Days', value: 2592000 },
+  ],
+} as const;
+
+// Upload Fee (VIDC)
+export const UPLOAD_FEE_PER_10MB = 1; // 1 VIDC per 10MB
 
 // API Endpoints
 export const API_ENDPOINTS = {
