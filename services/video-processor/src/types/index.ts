@@ -66,7 +66,21 @@ export interface ProcessingOptions {
   thumbnailFormat?: 'jpg' | 'png' | 'webp';
   skipThumbnails?: boolean;
   skipMetadata?: boolean;
+
+  // Enhanced metadata extraction
+  extractSourceMetadata?: boolean;    // Extract EXIF/container metadata
+  computePerceptualHash?: boolean;    // Compute pHash for duplicate detection
+  checkForDuplicates?: boolean;       // Check against existing videos
+  reverseGeocode?: boolean;           // Convert GPS to location name
+
+  // Overlay rendering
+  generateOverlayPreview?: boolean;   // Generate preview with overlay
+  burnOverlayIntoExport?: boolean;    // Burn overlay into downloadable video
 }
+
+// Re-export enhanced types
+export * from './metadata.js';
+export * from './overlay.js';
 
 export interface WebhookPayload {
   event: 'processing.started' | 'processing.progress' | 'processing.completed' | 'processing.failed';

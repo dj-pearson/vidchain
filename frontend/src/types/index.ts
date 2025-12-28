@@ -89,6 +89,248 @@ export interface VideoMetadata {
   };
 }
 
+// ============================================================================
+// ENHANCED NFT METADATA TYPES
+// ============================================================================
+
+export type ContentCategory =
+  | 'art'
+  | 'music'
+  | 'documentary'
+  | 'sports'
+  | 'gaming'
+  | 'education'
+  | 'entertainment'
+  | 'news'
+  | 'personal'
+  | 'commercial'
+  | 'other';
+
+export type ContentRating = 'G' | 'PG' | 'PG-13' | 'R' | 'NC-17';
+
+export type ProvenanceAction =
+  | 'created'
+  | 'uploaded'
+  | 'verified'
+  | 'minted'
+  | 'transferred'
+  | 'listed'
+  | 'sold'
+  | 'relisted'
+  | 'delisted'
+  | 'metadata_updated'
+  | 'duplicate_detected';
+
+// Video source metadata extracted from file
+export interface VideoSourceMetadata {
+  id: string;
+  video_id: string;
+
+  // Device & Capture Information
+  capture_device_make?: string;
+  capture_device_model?: string;
+  capture_device_serial?: string;
+  capture_software?: string;
+  capture_software_version?: string;
+
+  // Timestamps from file metadata
+  original_capture_date?: string;
+  file_creation_date?: string;
+  file_modification_date?: string;
+
+  // GPS/Location Data
+  gps_latitude?: number;
+  gps_longitude?: number;
+  gps_altitude?: number;
+  location_name?: string;
+
+  // Embedded Metadata
+  embedded_title?: string;
+  embedded_artist?: string;
+  embedded_copyright?: string;
+  embedded_description?: string;
+  embedded_comment?: string;
+
+  // Technical Metadata (extended)
+  color_space?: string;
+  color_primaries?: string;
+  color_transfer?: string;
+  bit_depth?: number;
+  hdr_format?: string;
+  rotation?: number;
+
+  // Audio Details
+  audio_sample_rate?: number;
+  audio_bit_depth?: number;
+  audio_language?: string;
+
+  // Container Metadata
+  container_format?: string;
+  encoder_name?: string;
+  encoder_version?: string;
+
+  // Raw metadata JSON
+  raw_metadata?: Record<string, unknown>;
+
+  created_at: string;
+  updated_at: string;
+}
+
+// Enhanced verification with NFT metadata
+export interface EnhancedVerification extends Verification {
+  // Classification
+  category: ContentCategory;
+  subcategory?: string;
+  content_rating: ContentRating;
+  tags: string[];
+
+  // Creator/Owner tracking
+  original_creator_id?: string;
+  original_creator_name?: string;
+  uploader_id?: string;
+  uploader_name?: string;
+  current_owner_name?: string;
+
+  // Integrity hashes
+  audio_fingerprint?: string;
+  color_histogram?: number[];
+  frame_hashes?: { timestamp: number; hash: string }[];
+
+  // Duplicate detection
+  original_verification_id?: string;
+  is_duplicate: boolean;
+  duplicate_confidence?: number;
+  original_source_hash?: string;
+
+  // Display preferences
+  overlay_enabled: boolean;
+  overlay_position: string;
+  overlay_opacity: number;
+
+  // Timestamps
+  mint_date?: string;
+  last_transfer_date?: string;
+
+  // Related data
+  source_metadata?: VideoSourceMetadata;
+  provenance?: ProvenanceRecord[];
+  overlay_settings?: OverlaySettings;
+}
+
+// Provenance record for chain of custody
+export interface ProvenanceRecord {
+  id: string;
+  verification_id: string;
+  action: ProvenanceAction;
+  actor_id?: string;
+  actor_address?: string;
+  actor_name?: string;
+  transaction_hash?: string;
+  block_number?: number;
+  details?: Record<string, unknown>;
+  ip_address?: string;
+  user_agent?: string;
+  from_address?: string;
+  to_address?: string;
+  price_amount?: number;
+  price_currency?: string;
+  created_at: string;
+}
+
+// Perceptual hash for similarity matching
+export interface PerceptualHashIndex {
+  id: string;
+  verification_id: string;
+  video_id: string;
+  phash_video: string;
+  phash_thumbnail?: string;
+  dhash_video?: string;
+  ahash_video?: string;
+  frame_phashes?: { timestamp: number; hash: string }[];
+  duration_seconds: number;
+  aspect_ratio: number;
+  created_at: string;
+}
+
+// Overlay corner content configuration
+export interface OverlayCornerContent {
+  type: 'verification_status' | 'category_year' | 'location_ipfs' | 'creator_owner' | 'custom';
+  show_token_id?: boolean;
+  custom_text?: string;
+  custom_icon?: string;
+}
+
+// Overlay display settings
+export interface OverlaySettings {
+  id: string;
+  verification_id: string;
+
+  // Corner content
+  top_left_content: OverlayCornerContent;
+  top_right_content: OverlayCornerContent;
+  bottom_left_content: OverlayCornerContent;
+  bottom_right_content: OverlayCornerContent;
+
+  // Styling
+  font_family: string;
+  font_size: number;
+  text_color: string;
+  background_color: string;
+  background_opacity: number;
+  corner_radius: number;
+  padding: number;
+  margin: number;
+
+  // Visibility
+  show_on_playback: boolean;
+  show_on_download: boolean;
+  burn_into_export: boolean;
+
+  // Animation
+  fade_in_duration: number;
+  auto_hide_after: number;
+
+  created_at: string;
+  updated_at: string;
+}
+
+// Duplicate detection result
+export interface DuplicateCheckResult {
+  is_duplicate: boolean;
+  confidence: number;
+  original_verification_id?: string;
+  original_video_id?: string;
+  original_creator_name?: string;
+  matching_hashes: {
+    type: 'sha256' | 'perceptual' | 'audio';
+    similarity: number;
+  }[];
+  recommendation: 'allow' | 'warn' | 'block';
+}
+
+// Video overlay data for display
+export interface VideoOverlayData {
+  // Top Left - Verification Status
+  verification_status: 'verified' | 'pending' | 'unverified';
+  token_id?: number;
+
+  // Top Right - Category & Year
+  category: ContentCategory;
+  year: number;
+
+  // Bottom Left - Location & IPFS
+  location_name?: string;
+  ipfs_cid: string;
+
+  // Bottom Right - Creator & Owner
+  original_creator_name: string;
+  current_owner_name: string;
+
+  // Additional
+  mint_date?: string;
+  sha256_hash: string;
+}
+
 // Verification result for API responses
 export interface VerificationResult {
   status: 'verified' | 'unverified' | 'modified' | 'unknown';

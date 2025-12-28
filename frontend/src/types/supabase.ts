@@ -258,18 +258,322 @@ export interface Database {
           created_at?: string
         }
       }
+      video_source_metadata: {
+        Row: {
+          id: string
+          video_id: string
+          capture_device_make: string | null
+          capture_device_model: string | null
+          capture_device_serial: string | null
+          capture_software: string | null
+          capture_software_version: string | null
+          original_capture_date: string | null
+          file_creation_date: string | null
+          file_modification_date: string | null
+          gps_latitude: number | null
+          gps_longitude: number | null
+          gps_altitude: number | null
+          location_name: string | null
+          embedded_title: string | null
+          embedded_artist: string | null
+          embedded_copyright: string | null
+          embedded_description: string | null
+          embedded_comment: string | null
+          color_space: string | null
+          color_primaries: string | null
+          color_transfer: string | null
+          bit_depth: number | null
+          hdr_format: string | null
+          rotation: number
+          audio_sample_rate: number | null
+          audio_bit_depth: number | null
+          audio_language: string | null
+          container_format: string | null
+          encoder_name: string | null
+          encoder_version: string | null
+          raw_metadata: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          video_id: string
+          capture_device_make?: string | null
+          capture_device_model?: string | null
+          capture_device_serial?: string | null
+          capture_software?: string | null
+          capture_software_version?: string | null
+          original_capture_date?: string | null
+          file_creation_date?: string | null
+          file_modification_date?: string | null
+          gps_latitude?: number | null
+          gps_longitude?: number | null
+          gps_altitude?: number | null
+          location_name?: string | null
+          embedded_title?: string | null
+          embedded_artist?: string | null
+          embedded_copyright?: string | null
+          embedded_description?: string | null
+          embedded_comment?: string | null
+          color_space?: string | null
+          color_primaries?: string | null
+          color_transfer?: string | null
+          bit_depth?: number | null
+          hdr_format?: string | null
+          rotation?: number
+          audio_sample_rate?: number | null
+          audio_bit_depth?: number | null
+          audio_language?: string | null
+          container_format?: string | null
+          encoder_name?: string | null
+          encoder_version?: string | null
+          raw_metadata?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          video_id?: string
+          capture_device_make?: string | null
+          capture_device_model?: string | null
+          capture_device_serial?: string | null
+          capture_software?: string | null
+          capture_software_version?: string | null
+          original_capture_date?: string | null
+          file_creation_date?: string | null
+          file_modification_date?: string | null
+          gps_latitude?: number | null
+          gps_longitude?: number | null
+          gps_altitude?: number | null
+          location_name?: string | null
+          embedded_title?: string | null
+          embedded_artist?: string | null
+          embedded_copyright?: string | null
+          embedded_description?: string | null
+          embedded_comment?: string | null
+          color_space?: string | null
+          color_primaries?: string | null
+          color_transfer?: string | null
+          bit_depth?: number | null
+          hdr_format?: string | null
+          rotation?: number
+          audio_sample_rate?: number | null
+          audio_bit_depth?: number | null
+          audio_language?: string | null
+          container_format?: string | null
+          encoder_name?: string | null
+          encoder_version?: string | null
+          raw_metadata?: Json
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      provenance_records: {
+        Row: {
+          id: string
+          verification_id: string
+          action: 'created' | 'uploaded' | 'verified' | 'minted' | 'transferred' | 'listed' | 'sold' | 'relisted' | 'delisted' | 'metadata_updated' | 'duplicate_detected'
+          actor_id: string | null
+          actor_address: string | null
+          actor_name: string | null
+          transaction_hash: string | null
+          block_number: number | null
+          details: Json | null
+          ip_address: string | null
+          user_agent: string | null
+          from_address: string | null
+          to_address: string | null
+          price_amount: number | null
+          price_currency: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          verification_id: string
+          action: 'created' | 'uploaded' | 'verified' | 'minted' | 'transferred' | 'listed' | 'sold' | 'relisted' | 'delisted' | 'metadata_updated' | 'duplicate_detected'
+          actor_id?: string | null
+          actor_address?: string | null
+          actor_name?: string | null
+          transaction_hash?: string | null
+          block_number?: number | null
+          details?: Json | null
+          ip_address?: string | null
+          user_agent?: string | null
+          from_address?: string | null
+          to_address?: string | null
+          price_amount?: number | null
+          price_currency?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          verification_id?: string
+          action?: 'created' | 'uploaded' | 'verified' | 'minted' | 'transferred' | 'listed' | 'sold' | 'relisted' | 'delisted' | 'metadata_updated' | 'duplicate_detected'
+          actor_id?: string | null
+          actor_address?: string | null
+          actor_name?: string | null
+          transaction_hash?: string | null
+          block_number?: number | null
+          details?: Json | null
+          ip_address?: string | null
+          user_agent?: string | null
+          from_address?: string | null
+          to_address?: string | null
+          price_amount?: number | null
+          price_currency?: string | null
+          created_at?: string
+        }
+      }
+      perceptual_hash_index: {
+        Row: {
+          id: string
+          verification_id: string
+          video_id: string
+          phash_video: string
+          phash_thumbnail: string | null
+          dhash_video: string | null
+          ahash_video: string | null
+          frame_phashes: Json
+          duration_seconds: number
+          aspect_ratio: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          verification_id: string
+          video_id: string
+          phash_video: string
+          phash_thumbnail?: string | null
+          dhash_video?: string | null
+          ahash_video?: string | null
+          frame_phashes?: Json
+          duration_seconds: number
+          aspect_ratio: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          verification_id?: string
+          video_id?: string
+          phash_video?: string
+          phash_thumbnail?: string | null
+          dhash_video?: string | null
+          ahash_video?: string | null
+          frame_phashes?: Json
+          duration_seconds?: number
+          aspect_ratio?: number
+          created_at?: string
+        }
+      }
+      overlay_settings: {
+        Row: {
+          id: string
+          verification_id: string
+          top_left_content: Json
+          top_right_content: Json
+          bottom_left_content: Json
+          bottom_right_content: Json
+          font_family: string
+          font_size: number
+          text_color: string
+          background_color: string
+          background_opacity: number
+          corner_radius: number
+          padding: number
+          margin: number
+          show_on_playback: boolean
+          show_on_download: boolean
+          burn_into_export: boolean
+          fade_in_duration: number
+          auto_hide_after: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          verification_id: string
+          top_left_content?: Json
+          top_right_content?: Json
+          bottom_left_content?: Json
+          bottom_right_content?: Json
+          font_family?: string
+          font_size?: number
+          text_color?: string
+          background_color?: string
+          background_opacity?: number
+          corner_radius?: number
+          padding?: number
+          margin?: number
+          show_on_playback?: boolean
+          show_on_download?: boolean
+          burn_into_export?: boolean
+          fade_in_duration?: number
+          auto_hide_after?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          verification_id?: string
+          top_left_content?: Json
+          top_right_content?: Json
+          bottom_left_content?: Json
+          bottom_right_content?: Json
+          font_family?: string
+          font_size?: number
+          text_color?: string
+          background_color?: string
+          background_opacity?: number
+          corner_radius?: number
+          padding?: number
+          margin?: number
+          show_on_playback?: boolean
+          show_on_download?: boolean
+          burn_into_export?: boolean
+          fade_in_duration?: number
+          auto_hide_after?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      hamming_distance: {
+        Args: { hash1: string; hash2: string }
+        Returns: number
+      }
+      find_similar_videos: {
+        Args: { target_phash: string; max_distance?: number; limit_count?: number }
+        Returns: {
+          verification_id: string
+          video_id: string
+          phash: string
+          distance: number
+          similarity: number
+        }[]
+      }
+      record_provenance: {
+        Args: {
+          p_verification_id: string
+          p_action: string
+          p_actor_id?: string
+          p_actor_address?: string
+          p_details?: Json
+        }
+        Returns: string
+      }
     }
     Enums: {
       user_role: 'user' | 'admin' | 'organization_admin'
       subscription_tier: 'starter' | 'professional' | 'enterprise' | 'academic'
       video_status: 'uploading' | 'processing' | 'ready' | 'failed'
       verification_status: 'pending' | 'processing' | 'verified' | 'failed'
+      content_category: 'art' | 'music' | 'documentary' | 'sports' | 'gaming' | 'education' | 'entertainment' | 'news' | 'personal' | 'commercial' | 'other'
+      content_rating: 'G' | 'PG' | 'PG-13' | 'R' | 'NC-17'
+      provenance_action: 'created' | 'uploaded' | 'verified' | 'minted' | 'transferred' | 'listed' | 'sold' | 'relisted' | 'delisted' | 'metadata_updated' | 'duplicate_detected'
     }
   }
 }
