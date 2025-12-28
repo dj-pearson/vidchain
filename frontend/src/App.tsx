@@ -28,6 +28,7 @@ import {
   AdminMarketplace,
   AdminFinance,
 } from '@/pages/admin';
+import { DMCASubmit } from '@/pages/dmca';
 import { ROUTES } from '@/config/constants';
 import { Web3Provider } from '@/lib/web3';
 
@@ -61,6 +62,8 @@ function App() {
             <Route path={ROUTES.pricing} element={<Pricing />} />
             <Route path={ROUTES.marketplace} element={<Marketplace />} />
             <Route path="/marketplace/:id" element={<NFTDetail />} />
+            {/* DMCA routes (public) */}
+            <Route path={ROUTES.dmcaSubmit} element={<DMCASubmit />} />
             <Route path="*" element={<NotFound />} />
           </Route>
 

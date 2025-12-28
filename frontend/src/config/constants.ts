@@ -131,6 +131,11 @@ export const ROUTES = {
   adminAnalytics: '/admin/analytics',
   adminAuditLogs: '/admin/audit-logs',
   adminSettings: '/admin/settings',
+  // DMCA routes
+  dmcaSubmit: '/dmca/submit',
+  dmcaPolicy: '/dmca/policy',
+  dmcaCounter: '/dmca/counter',
+  dmcaMyClaims: '/dmca/my-claims',
 } as const;
 
 // Token Contract Addresses
