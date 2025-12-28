@@ -42,23 +42,47 @@ services:
     networks:
       - vidchain
 
+  # Redis for BullMQ job queue
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vidchain
+
   # Video Processing Worker
   video-processor:
     build:
       context: ./services/video-processor
       dockerfile: Dockerfile
+    ports:
+      - "3002:3001"
     environment:
+      - NODE_ENV=production
+      - PORT=3001
       - SUPABASE_URL=http://kong:8000
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-      - MUX_TOKEN_ID=${MUX_TOKEN_ID}
-      - MUX_TOKEN_SECRET=${MUX_TOKEN_SECRET}
-      - PINATA_JWT=${PINATA_JWT}
+      - REDIS_URL=redis://redis:6379
+      - WORKER_CONCURRENCY=2
+      - TEMP_DIR=/tmp/vidchain
+      - SERVICE_API_KEY=${SERVICE_API_KEY}
+      - CORS_ORIGIN=http://localhost:3000
     volumes:
-      - video-processing:/tmp/videos
+      - video-processing:/tmp/vidchain
     depends_on:
       - kong
+      - redis
     networks:
       - vidchain
+    restart: unless-stopped
 
   # Supabase API Gateway (Kong)
   kong:
@@ -254,6 +278,7 @@ volumes:
   postgres-data:
   storage-data:
   video-processing:
+  redis-data:
 
 networks:
   vidchain:

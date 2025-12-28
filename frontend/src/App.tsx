@@ -1,18 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppLayout, AuthLayout, PublicLayout } from '@/components/layout';
-import { Dashboard, Upload, Videos, Verify, Settings, Login, Signup } from '@/pages';
+import { Dashboard, Upload, Videos, VideoDetail, Verify, Settings, ApiKeys, Billing, Login, Signup } from '@/pages';
 import { ROUTES } from '@/config/constants';
-
-// Create a client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 1,
-    },
-  },
-});
+import { Web3Provider } from '@/lib/web3';
 
 // Home page component
 function Home() {
@@ -63,7 +53,7 @@ function NotFound() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <Web3Provider>
       <BrowserRouter>
         <Routes>
           {/* Public routes */}
@@ -84,15 +74,15 @@ function App() {
             <Route path={ROUTES.dashboard} element={<Dashboard />} />
             <Route path={ROUTES.upload} element={<Upload />} />
             <Route path={ROUTES.videos} element={<Videos />} />
-            <Route path="/videos/:id" element={<Videos />} />
+            <Route path="/videos/:id" element={<VideoDetail />} />
             <Route path={ROUTES.settings} element={<Settings />} />
-            <Route path={ROUTES.apiKeys} element={<Settings />} />
-            <Route path={ROUTES.billing} element={<Settings />} />
+            <Route path={ROUTES.apiKeys} element={<ApiKeys />} />
+            <Route path={ROUTES.billing} element={<Billing />} />
             <Route path={ROUTES.organization} element={<Settings />} />
           </Route>
         </Routes>
       </BrowserRouter>
-    </QueryClientProvider>
+    </Web3Provider>
   );
 }
 
