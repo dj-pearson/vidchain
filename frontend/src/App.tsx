@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AppLayout, AuthLayout, PublicLayout } from '@/components/layout';
+import { AppLayout, AuthLayout, PublicLayout, AdminLayout } from '@/components/layout';
 import {
   Dashboard,
   Upload,
@@ -20,6 +20,14 @@ import {
   MyListings,
   Wallet,
 } from '@/pages';
+import {
+  AdminOverview,
+  AdminUsers,
+  AdminContent,
+  AdminModeration,
+  AdminMarketplace,
+  AdminFinance,
+} from '@/pages/admin';
 import { ROUTES } from '@/config/constants';
 import { Web3Provider } from '@/lib/web3';
 
@@ -75,6 +83,16 @@ function App() {
             {/* Marketplace routes (protected) */}
             <Route path={ROUTES.myListings} element={<MyListings />} />
             <Route path={ROUTES.wallet} element={<Wallet />} />
+          </Route>
+
+          {/* Admin routes */}
+          <Route element={<AdminLayout />}>
+            <Route path={ROUTES.adminDashboard} element={<AdminOverview />} />
+            <Route path={ROUTES.adminUsers} element={<AdminUsers />} />
+            <Route path={ROUTES.adminContent} element={<AdminContent />} />
+            <Route path={ROUTES.adminModeration} element={<AdminModeration />} />
+            <Route path={ROUTES.adminMarketplace} element={<AdminMarketplace />} />
+            <Route path={ROUTES.adminFinance} element={<AdminFinance />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -119,6 +119,18 @@ export const ROUTES = {
   wallet: '/wallet',
   staking: '/staking',
   rewards: '/rewards',
+  // Admin routes
+  adminDashboard: '/admin',
+  adminUsers: '/admin/users',
+  adminUser: (id: string) => `/admin/users/${id}`,
+  adminContent: '/admin/content',
+  adminModeration: '/admin/moderation',
+  adminMarketplace: '/admin/marketplace',
+  adminFinance: '/admin/finance',
+  adminTokens: '/admin/tokens',
+  adminAnalytics: '/admin/analytics',
+  adminAuditLogs: '/admin/audit-logs',
+  adminSettings: '/admin/settings',
 } as const;
 
 // Token Contract Addresses
