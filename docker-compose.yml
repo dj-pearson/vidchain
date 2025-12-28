@@ -1,0 +1,285 @@
+# VidChain Docker Compose Configuration
+# For self-hosted deployment on Coolify
+
+version: '3.8'
+
+services:
+  # Frontend Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_SUPABASE_URL=http://kong:8000
+      - VITE_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - VITE_POLYGON_NETWORK=${POLYGON_NETWORK:-mumbai}
+      - VITE_VIDCHAIN_CONTRACT_ADDRESS=${VIDCHAIN_CONTRACT_ADDRESS}
+    depends_on:
+      - kong
+    networks:
+      - vidchain
+
+  # Edge Functions Runtime
+  edge-functions:
+    build:
+      context: ./supabase/functions
+      dockerfile: Dockerfile
+    ports:
+      - "54321:54321"
+    environment:
+      - SUPABASE_URL=http://kong:8000
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - PINATA_JWT=${PINATA_JWT}
+      - ALCHEMY_API_KEY=${ALCHEMY_API_KEY}
+      - VIDCHAIN_CONTRACT_ADDRESS=${VIDCHAIN_CONTRACT_ADDRESS}
+      - VIDCHAIN_PRIVATE_KEY=${VIDCHAIN_PRIVATE_KEY}
+    volumes:
+      - ./supabase/functions:/home/deno/functions:ro
+    depends_on:
+      - kong
+    networks:
+      - vidchain
+
+  # Redis for BullMQ job queue
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vidchain
+
+  # Video Processing Worker
+  video-processor:
+    build:
+      context: ./services/video-processor
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - SUPABASE_URL=http://kong:8000
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - REDIS_URL=redis://redis:6379
+      - WORKER_CONCURRENCY=2
+      - TEMP_DIR=/tmp/vidchain
+      - SERVICE_API_KEY=${SERVICE_API_KEY}
+      - CORS_ORIGIN=http://localhost:3000
+    volumes:
+      - video-processing:/tmp/vidchain
+    depends_on:
+      - kong
+      - redis
+    networks:
+      - vidchain
+    restart: unless-stopped
+
+  # Supabase API Gateway (Kong)
+  kong:
+    image: kong:3.5
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+    environment:
+      - KONG_DATABASE=off
+      - KONG_DECLARATIVE_CONFIG=/var/lib/kong/kong.yml
+      - KONG_DNS_ORDER=LAST,A,CNAME
+      - KONG_PLUGINS=request-transformer,cors,key-auth,acl
+    volumes:
+      - ./supabase/kong.yml:/var/lib/kong/kong.yml:ro
+    depends_on:
+      - supabase-rest
+      - supabase-auth
+      - supabase-storage
+    networks:
+      - vidchain
+
+  # Supabase REST API (PostgREST)
+  supabase-rest:
+    image: postgrest/postgrest:v12.0.2
+    ports:
+      - "3001:3000"
+    environment:
+      - PGRST_DB_URI=postgres://authenticator:${POSTGRES_PASSWORD}@db:5432/postgres
+      - PGRST_DB_SCHEMAS=public,storage,graphql_public
+      - PGRST_DB_ANON_ROLE=anon
+      - PGRST_JWT_SECRET=${JWT_SECRET}
+      - PGRST_DB_USE_LEGACY_GUCS=false
+    depends_on:
+      - db
+    networks:
+      - vidchain
+
+  # Supabase Auth (GoTrue)
+  supabase-auth:
+    image: supabase/gotrue:v2.143.0
+    ports:
+      - "9999:9999"
+    environment:
+      - GOTRUE_API_HOST=0.0.0.0
+      - GOTRUE_API_PORT=9999
+      - API_EXTERNAL_URL=http://localhost:8000
+      - GOTRUE_DB_DRIVER=postgres
+      - GOTRUE_DB_DATABASE_URL=postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+      - GOTRUE_SITE_URL=http://localhost:3000
+      - GOTRUE_URI_ALLOW_LIST=http://localhost:3000
+      - GOTRUE_DISABLE_SIGNUP=false
+      - GOTRUE_JWT_ADMIN_ROLES=service_role
+      - GOTRUE_JWT_AUD=authenticated
+      - GOTRUE_JWT_DEFAULT_GROUP_NAME=authenticated
+      - GOTRUE_JWT_EXP=3600
+      - GOTRUE_JWT_SECRET=${JWT_SECRET}
+      - GOTRUE_EXTERNAL_EMAIL_ENABLED=true
+      - GOTRUE_MAILER_AUTOCONFIRM=false
+      - GOTRUE_SMTP_HOST=${SMTP_HOST:-localhost}
+      - GOTRUE_SMTP_PORT=${SMTP_PORT:-25}
+      - GOTRUE_SMTP_USER=${SMTP_USER:-}
+      - GOTRUE_SMTP_PASS=${SMTP_PASS:-}
+      - GOTRUE_SMTP_ADMIN_EMAIL=${SMTP_ADMIN_EMAIL:-admin@vidchain.io}
+      - GOTRUE_SMTP_MAX_FREQUENCY=1ns
+      - GOTRUE_MAILER_URLPATHS_INVITE=/auth/v1/verify
+      - GOTRUE_MAILER_URLPATHS_CONFIRMATION=/auth/v1/verify
+      - GOTRUE_MAILER_URLPATHS_RECOVERY=/auth/v1/verify
+      - GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE=/auth/v1/verify
+    depends_on:
+      - db
+    networks:
+      - vidchain
+
+  # Supabase Storage
+  supabase-storage:
+    image: supabase/storage-api:v0.46.4
+    ports:
+      - "5000:5000"
+    environment:
+      - ANON_KEY=${SUPABASE_ANON_KEY}
+      - SERVICE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - POSTGREST_URL=http://supabase-rest:3000
+      - PGRST_JWT_SECRET=${JWT_SECRET}
+      - DATABASE_URL=postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+      - FILE_SIZE_LIMIT=524288000
+      - STORAGE_BACKEND=file
+      - FILE_STORAGE_BACKEND_PATH=/var/lib/storage
+      - TENANT_ID=stub
+      - REGION=stub
+      - GLOBAL_S3_BUCKET=stub
+      - ENABLE_IMAGE_TRANSFORMATION=true
+    volumes:
+      - storage-data:/var/lib/storage
+    depends_on:
+      - db
+      - supabase-rest
+    networks:
+      - vidchain
+
+  # Supabase Realtime
+  supabase-realtime:
+    image: supabase/realtime:v2.27.5
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=supabase_admin
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_NAME=postgres
+      - DB_AFTER_CONNECT_QUERY=SET search_path TO _realtime
+      - DB_ENC_KEY=${REALTIME_ENC_KEY:-supabase_realtime_encryption_key}
+      - API_JWT_SECRET=${JWT_SECRET}
+      - FLY_ALLOC_ID=fly123
+      - FLY_APP_NAME=realtime
+      - SECRET_KEY_BASE=${REALTIME_SECRET_KEY_BASE:-super_secret_key_base_for_realtime}
+      - ERL_AFLAGS=-proto_dist inet_tcp
+      - ENABLE_TAILSCALE=false
+      - DNS_NODES=''
+    depends_on:
+      - db
+    networks:
+      - vidchain
+
+  # PostgreSQL Database
+  db:
+    image: supabase/postgres:15.1.1.41
+    ports:
+      - "54322:5432"
+    environment:
+      - POSTGRES_HOST=/var/run/postgresql
+      - PGPORT=5432
+      - POSTGRES_PORT=5432
+      - PGPASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - PGDATABASE=postgres
+      - POSTGRES_DB=postgres
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXP=3600
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -h localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vidchain
+
+  # Supabase Studio (optional, for development)
+  studio:
+    image: supabase/studio:20240205-3d96b2d
+    ports:
+      - "54323:3000"
+    environment:
+      - STUDIO_PG_META_URL=http://supabase-meta:8080
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - DEFAULT_ORGANIZATION_NAME=VidChain
+      - DEFAULT_PROJECT_NAME=vidchain
+      - SUPABASE_URL=http://kong:8000
+      - SUPABASE_PUBLIC_URL=http://localhost:8000
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+    depends_on:
+      - supabase-meta
+    networks:
+      - vidchain
+    profiles:
+      - studio
+
+  # Supabase Meta (for Studio)
+  supabase-meta:
+    image: supabase/postgres-meta:v0.77.2
+    ports:
+      - "8080:8080"
+    environment:
+      - PG_META_PORT=8080
+      - PG_META_DB_HOST=db
+      - PG_META_DB_PORT=5432
+      - PG_META_DB_NAME=postgres
+      - PG_META_DB_USER=supabase_admin
+      - PG_META_DB_PASSWORD=${POSTGRES_PASSWORD}
+    depends_on:
+      - db
+    networks:
+      - vidchain
+    profiles:
+      - studio
+
+volumes:
+  postgres-data:
+  storage-data:
+  video-processing:
+  redis-data:
+
+networks:
+  vidchain:
+    driver: bridge
