@@ -50,7 +50,7 @@ export function VideoPlayer({
   onTimeUpdate,
   onError,
 }: VideoPlayerProps) {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [_isPlaying, setIsPlaying] = useState(false);
   const [hasError, setHasError] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -78,7 +78,7 @@ export function VideoPlayer({
   );
 
   const handleError = useCallback(
-    (e: Event) => {
+    (_e: Event) => {
       setHasError(true);
       onError?.(new Error('Video playback error'));
     },

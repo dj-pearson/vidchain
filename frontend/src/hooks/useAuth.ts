@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
-import { signIn, signUp, signOut, resetPassword } from '@/lib/supabase';
+import { signIn, signUp, resetPassword } from '@/lib/supabase';
 import { ROUTES } from '@/config/constants';
 
 export function useAuth() {

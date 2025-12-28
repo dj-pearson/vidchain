@@ -18,7 +18,6 @@ import {
   Clock,
   Check,
   AlertCircle,
-  RefreshCw,
   Settings,
 } from 'lucide-react';
 
@@ -42,7 +41,7 @@ interface NewApiKey {
 }
 
 export function ApiKeys() {
-  const { user, currentOrganization } = useAuth();
+  const { profile } = useAuth();
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -67,24 +66,24 @@ export function ApiKeys() {
   ];
 
   useEffect(() => {
-    if (currentOrganization) {
+    if (profile?.organization_id) {
       fetchApiKeys();
     }
-  }, [currentOrganization]);
+  }, [profile?.organization_id]);
 
   const fetchApiKeys = async () => {
-    if (!currentOrganization) return;
+    if (!profile?.organization_id) return;
 
     try {
       setLoading(true);
       const { data, error: fetchError } = await supabase
         .from('api_keys')
         .select('*')
-        .eq('organization_id', currentOrganization.id)
+        .eq('organization_id', profile.organization_id)
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
-      setApiKeys(data || []);
+      setApiKeys((data as ApiKey[]) || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load API keys');
     } finally {
@@ -93,7 +92,7 @@ export function ApiKeys() {
   };
 
   const createApiKey = async () => {
-    if (!currentOrganization || !newKey.name) return;
+    if (!profile?.organization_id || !newKey.name) return;
 
     try {
       setCreating(true);
@@ -120,7 +119,7 @@ export function ApiKeys() {
         : null;
 
       const { error: createError } = await supabase.from('api_keys').insert({
-        organization_id: currentOrganization.id,
+        organization_id: profile.organization_id,
         name: newKey.name,
         key_hash: keyHash,
         key_prefix: apiKeyValue.substring(0, 10),
@@ -128,7 +127,7 @@ export function ApiKeys() {
         rate_limit: newKey.rate_limit,
         expires_at: expiresAt,
         is_active: true,
-      });
+      } as any);
 
       if (createError) throw createError;
 
@@ -172,8 +171,8 @@ export function ApiKeys() {
 
   const toggleKeyStatus = async (id: string, isActive: boolean) => {
     try {
-      const { error: updateError } = await supabase
-        .from('api_keys')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: updateError } = await (supabase.from('api_keys') as any)
         .update({ is_active: !isActive })
         .eq('id', id);
 
@@ -214,7 +213,7 @@ export function ApiKeys() {
       </div>
 
       {error && (
-        <Alert variant="error" className="mb-6">
+        <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
           <span>{error}</span>
         </Alert>

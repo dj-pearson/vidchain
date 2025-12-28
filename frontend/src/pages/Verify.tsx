@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { usePublicVerification } from '@/hooks';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
@@ -18,7 +18,6 @@ import {
   Shield,
   CheckCircle,
   XCircle,
-  AlertTriangle,
   ExternalLink,
   Copy,
   FileVideo,

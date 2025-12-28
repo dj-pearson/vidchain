@@ -34,7 +34,7 @@ interface EmbedGeneratorProps {
  */
 export function EmbedGenerator({
   tokenId,
-  videoId,
+  videoId: _videoId,
   status,
   playbackId,
   className,

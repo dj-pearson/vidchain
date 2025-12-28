@@ -23,7 +23,7 @@ interface VerificationBadgeProps {
 export function VerificationBadge({
   status,
   tokenId,
-  transactionHash,
+  transactionHash: _transactionHash,
   timestamp,
   size = 'md',
   variant = 'default',

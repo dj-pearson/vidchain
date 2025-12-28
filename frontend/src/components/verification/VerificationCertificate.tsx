@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { Shield, CheckCircle, ExternalLink, Copy, QRCodeIcon } from 'lucide-react';
+import { Shield, CheckCircle, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 
 interface VerificationCertificateProps {

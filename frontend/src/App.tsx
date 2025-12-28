@@ -1,39 +1,9 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppLayout, AuthLayout, PublicLayout } from '@/components/layout';
-import { Dashboard, Upload, Videos, VideoDetail, Verify, Settings, ApiKeys, Billing, Login, Signup } from '@/pages';
+import { Dashboard, Upload, Videos, VideoDetail, Verify, Settings, Organization, ApiKeys, Billing, Login, Signup, HomePage, HowItWorks, Pricing } from '@/pages';
 import { ROUTES } from '@/config/constants';
 import { Web3Provider } from '@/lib/web3';
 
-// Home page component
-function Home() {
-  return (
-    <div className="container mx-auto px-4 py-16">
-      <div className="text-center">
-        <h1 className="text-5xl font-bold">VidChain</h1>
-        <p className="mt-4 text-xl text-muted-foreground">
-          Video Authenticity Verification Platform
-        </p>
-        <p className="mt-2 text-muted-foreground">
-          Protect your video content with blockchain-verified provenance
-        </p>
-        <div className="mt-8 flex justify-center gap-4">
-          <a
-            href={ROUTES.signup}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Get Started
-          </a>
-          <a
-            href={ROUTES.verify}
-            className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-8 text-sm font-medium hover:bg-accent"
-          >
-            Verify a Video
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // 404 page
 function NotFound() {
@@ -58,8 +28,10 @@ function App() {
         <Routes>
           {/* Public routes */}
           <Route element={<PublicLayout />}>
-            <Route path={ROUTES.home} element={<Home />} />
+            <Route path={ROUTES.home} element={<HomePage />} />
             <Route path={ROUTES.verify} element={<Verify />} />
+            <Route path={ROUTES.howItWorks} element={<HowItWorks />} />
+            <Route path={ROUTES.pricing} element={<Pricing />} />
             <Route path="*" element={<NotFound />} />
           </Route>
 
@@ -78,7 +50,7 @@ function App() {
             <Route path={ROUTES.settings} element={<Settings />} />
             <Route path={ROUTES.apiKeys} element={<ApiKeys />} />
             <Route path={ROUTES.billing} element={<Billing />} />
-            <Route path={ROUTES.organization} element={<Settings />} />
+            <Route path={ROUTES.organization} element={<Organization />} />
           </Route>
         </Routes>
       </BrowserRouter>

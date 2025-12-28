@@ -9,7 +9,7 @@ describe('Button', () => {
   });
 
   it('applies variant classes correctly', () => {
-    const { rerender } = render(<Button variant="primary">Primary</Button>);
+    const { rerender } = render(<Button variant="default">Default</Button>);
     expect(screen.getByRole('button')).toHaveClass('bg-primary');
 
     rerender(<Button variant="secondary">Secondary</Button>);
@@ -27,13 +27,13 @@ describe('Button', () => {
 
   it('applies size classes correctly', () => {
     const { rerender } = render(<Button size="sm">Small</Button>);
-    expect(screen.getByRole('button')).toHaveClass('h-8');
+    expect(screen.getByRole('button')).toHaveClass('h-9');
 
-    rerender(<Button size="md">Medium</Button>);
+    rerender(<Button size="default">Default</Button>);
     expect(screen.getByRole('button')).toHaveClass('h-10');
 
     rerender(<Button size="lg">Large</Button>);
-    expect(screen.getByRole('button')).toHaveClass('h-12');
+    expect(screen.getByRole('button')).toHaveClass('h-11');
   });
 
   it('handles click events', () => {
@@ -52,12 +52,10 @@ describe('Button', () => {
     expect(handleClick).not.toHaveBeenCalled();
   });
 
-  it('renders as a child component when asChild is true', () => {
-    render(
-      <Button asChild>
-        <a href="/test">Link Button</a>
-      </Button>
-    );
-    expect(screen.getByRole('link')).toHaveTextContent('Link Button');
+  it('shows loading spinner when isLoading is true', () => {
+    render(<Button isLoading>Loading</Button>);
+    const button = screen.getByRole('button');
+    expect(button).toBeDisabled();
+    expect(button.querySelector('svg')).toBeInTheDocument();
   });
 });

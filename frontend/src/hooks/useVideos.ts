@@ -112,7 +112,7 @@ export function useUploadVideo() {
           mime_type: file.type,
           storage_path: uploadData.path,
           status: 'processing',
-        })
+        } as any)
         .select()
         .single();
 
@@ -178,8 +178,9 @@ export function useDeleteVideo() {
       if (getError) throw getError;
 
       // Delete from storage
-      if (video?.storage_path) {
-        await supabase.storage.from('videos').remove([video.storage_path]);
+      const videoData = video as { storage_path?: string } | null;
+      if (videoData?.storage_path) {
+        await supabase.storage.from('videos').remove([videoData.storage_path]);
       }
 
       // Delete record

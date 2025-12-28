@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/Progress';
 import { AlertWithIcon } from '@/components/ui/Alert';
 import { ROUTES, MAX_FILE_SIZE_MB, ALLOWED_VIDEO_TYPES } from '@/config/constants';
 import { formatFileSize } from '@/lib/utils';
-import { Upload as UploadIcon, Video, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload as UploadIcon, Video, X, CheckCircle } from 'lucide-react';
 
 interface FormData {
   file: File | null;

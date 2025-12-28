@@ -82,8 +82,8 @@ export const updateUserProfile = async (
   userId: string,
   updates: Partial<Database['public']['Tables']['users']['Update']>
 ) => {
-  const { data, error } = await supabase
-    .from('users')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase.from('users') as any)
     .update(updates)
     .eq('id', userId)
     .select()

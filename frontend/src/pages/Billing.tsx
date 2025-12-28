@@ -14,7 +14,6 @@ import {
   Zap,
   Shield,
   Video,
-  Users,
   HardDrive,
   ArrowRight,
   ExternalLink,
@@ -48,7 +47,7 @@ interface Plan {
 interface Subscription {
   plan: string;
   status: string;
-  periodEnd: string;
+  periodEnd?: string;
   usage: {
     videos: { used: number; limit: number };
     verifications: { used: number; limit: number };
@@ -132,7 +131,7 @@ const PLANS: Plan[] = [
 ];
 
 export function Billing() {
-  const { user, currentOrganization } = useAuth();
+  const { profile } = useAuth();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
@@ -140,13 +139,13 @@ export function Billing() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (currentOrganization) {
+    if (profile?.organization_id) {
       fetchSubscription();
     }
-  }, [currentOrganization]);
+  }, [profile?.organization_id]);
 
   const fetchSubscription = async () => {
-    if (!currentOrganization) return;
+    if (!profile?.organization_id) return;
 
     try {
       setLoading(true);
@@ -162,7 +161,7 @@ export function Billing() {
           verifications_per_month,
           storage_gb
         `)
-        .eq('id', currentOrganization.id)
+        .eq('id', profile.organization_id)
         .single();
 
       if (orgError) throw orgError;
@@ -174,31 +173,41 @@ export function Billing() {
       const { count: videoCount } = await supabase
         .from('videos')
         .select('*', { count: 'exact', head: true })
-        .eq('organization_id', currentOrganization.id)
+        .eq('organization_id', profile.organization_id)
         .gte('created_at', startOfMonth.toISOString());
 
       const { count: verificationCount } = await supabase
         .from('verifications')
         .select('*', { count: 'exact', head: true })
-        .eq('organization_id', currentOrganization.id)
+        .eq('organization_id', profile.organization_id)
         .gte('created_at', startOfMonth.toISOString());
 
+      // Type assertion for org data
+      const orgData = org as {
+        subscription_plan?: string;
+        subscription_status?: string;
+        subscription_period_end?: string;
+        videos_per_month?: number;
+        verifications_per_month?: number;
+        storage_gb?: number;
+      };
+
       setSubscription({
-        plan: org.subscription_plan || 'free',
-        status: org.subscription_status || 'inactive',
-        periodEnd: org.subscription_period_end,
+        plan: orgData.subscription_plan || 'free',
+        status: orgData.subscription_status || 'inactive',
+        periodEnd: orgData.subscription_period_end,
         usage: {
           videos: {
             used: videoCount || 0,
-            limit: org.videos_per_month || 5,
+            limit: orgData.videos_per_month || 5,
           },
           verifications: {
             used: verificationCount || 0,
-            limit: org.verifications_per_month || 10,
+            limit: orgData.verifications_per_month || 10,
           },
           storage: {
             used: 0, // Would need to calculate from storage
-            limit: org.storage_gb || 1,
+            limit: orgData.storage_gb || 1,
           },
         },
       });
@@ -269,7 +278,7 @@ export function Billing() {
       </div>
 
       {error && (
-        <Alert variant="error" className="mb-6">
+        <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
           <span>{error}</span>
         </Alert>

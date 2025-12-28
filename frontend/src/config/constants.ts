@@ -93,6 +93,8 @@ export const SUBSCRIPTION_TIERS = {
 // Routes
 export const ROUTES = {
   home: '/',
+  howItWorks: '/how-it-works',
+  pricing: '/pricing',
   dashboard: '/dashboard',
   upload: '/upload',
   videos: '/videos',

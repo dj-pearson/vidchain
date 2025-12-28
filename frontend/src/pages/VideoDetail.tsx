@@ -56,8 +56,8 @@ export function VideoDetail() {
 
   // Blockchain verification data
   const tokenId = video?.verification?.token_id;
-  const { data: onChainData, isLoading: isVerifying } = useVerifyToken(tokenId);
-  const { data: videoRecord } = useVideoRecord(tokenId);
+  const { data: onChainData, isLoading: _isVerifying } = useVerifyToken(tokenId);
+  const { data: _videoRecord } = useVideoRecord(tokenId);
 
   useEffect(() => {
     async function fetchVideo() {
