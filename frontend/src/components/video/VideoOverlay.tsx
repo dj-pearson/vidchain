@@ -375,7 +375,7 @@ export function VideoOverlayWrapper({
   className?: string;
 }) {
   const [isHovering, setIsHovering] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying] = useState(false);
 
   // Show overlay when hovering or paused
   const shouldShowOverlay = showOverlay && overlayData && (isHovering || !isPlaying);

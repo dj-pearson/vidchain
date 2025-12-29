@@ -13,8 +13,6 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  ArrowUpRight,
-  ArrowDownRight,
 } from 'lucide-react';
 
 // Mock data - would be fetched from API

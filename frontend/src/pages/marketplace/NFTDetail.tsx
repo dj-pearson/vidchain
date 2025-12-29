@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
+// Badge import removed - unused
 import { Input } from '@/components/ui/Input';
 import { ROUTES } from '@/config/constants';
 import { formatRelativeTime } from '@/lib/utils';
@@ -145,7 +145,7 @@ const MOCK_NFT = {
 };
 
 export function NFTDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { id: _id } = useParams<{ id: string }>();
   const [offerAmount, setOfferAmount] = useState('');
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [expandedSections, setExpandedSections] = useState({

@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/Input';
 import { ROUTES } from '@/config/constants';
 import { formatRelativeTime } from '@/lib/utils';
 import {
-  Wallet as WalletIcon,
   Coins,
   TrendingUp,
   ArrowUpRight,

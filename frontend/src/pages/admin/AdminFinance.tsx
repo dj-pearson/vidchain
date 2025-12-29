@@ -6,10 +6,8 @@ import { formatRelativeTime } from '@/lib/utils';
 import {
   DollarSign,
   TrendingUp,
-  TrendingDown,
   Coins,
   PiggyBank,
-  ArrowUpRight,
   ArrowDownRight,
   Wallet,
   BarChart3,
@@ -110,7 +108,7 @@ const MOCK_FEE_BREAKDOWN = {
 type TimeRange = '24h' | '7d' | '30d' | 'all';
 
 export function AdminFinance() {
-  const [timeRange, setTimeRange] = useState<TimeRange>('30d');
+  const [_timeRange, _setTimeRange] = useState<TimeRange>('30d');
 
   return (
     <div className="space-y-6">
