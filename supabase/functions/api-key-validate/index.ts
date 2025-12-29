@@ -3,11 +3,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import { crypto } from "https://deno.land/std@0.177.0/crypto/mod.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-api-key",
-};
+import { getCorsHeaders, handleCorsPreflightRequest, corsJsonResponse, corsErrorResponse } from "../_shared/cors.ts";
 
 interface ApiKeyValidationResult {
   valid: boolean;
@@ -34,9 +30,8 @@ async function hashApiKey(key: string): Promise<string> {
 
 Deno.serve(async (req: Request): Promise<Response> => {
   // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  const preflightResponse = handleCorsPreflightRequest(req);
+  if (preflightResponse) return preflightResponse;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -54,10 +49,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         valid: false,
         error: "API key is required",
       };
-      return new Response(JSON.stringify(result), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return corsJsonResponse(req, result, 401);
     }
 
     // Hash the API key for lookup
@@ -85,10 +77,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         valid: false,
         error: "Invalid API key",
       };
-      return new Response(JSON.stringify(result), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return corsJsonResponse(req, result, 401);
     }
 
     // Check if key is active
@@ -97,10 +86,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         valid: false,
         error: "API key is disabled",
       };
-      return new Response(JSON.stringify(result), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return corsJsonResponse(req, result, 401);
     }
 
     // Check if key is expired
@@ -109,10 +95,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         valid: false,
         error: "API key has expired",
       };
-      return new Response(JSON.stringify(result), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return corsJsonResponse(req, result, 401);
     }
 
     // Check rate limit
@@ -138,10 +121,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
           reset_at: resetAt.toISOString(),
         },
       };
-      return new Response(JSON.stringify(result), {
-        status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return corsJsonResponse(req, result, 429);
     }
 
     // Update last used timestamp
@@ -169,6 +149,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       },
     };
 
+    const corsHeaders = getCorsHeaders(req);
     return new Response(JSON.stringify(result), {
       headers: {
         ...corsHeaders,
@@ -184,9 +165,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
       valid: false,
       error: "Internal server error",
     };
-    return new Response(JSON.stringify(result), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return corsJsonResponse(req, result, 500);
   }
 });

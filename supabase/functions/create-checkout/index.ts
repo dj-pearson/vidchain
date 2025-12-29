@@ -3,11 +3,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import Stripe from "https://esm.sh/stripe@14.14.0?target=deno";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders, handleCorsPreflightRequest, corsJsonResponse, corsErrorResponse } from "../_shared/cors.ts";
 
 interface CheckoutRequest {
   price_id: string;
@@ -33,9 +29,8 @@ const PRICE_IDS = {
 
 Deno.serve(async (req: Request): Promise<Response> => {
   // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  const preflightResponse = handleCorsPreflightRequest(req);
+  if (preflightResponse) return preflightResponse;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -132,23 +127,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
       allow_promotion_codes: true,
     });
 
-    return new Response(
-      JSON.stringify({
-        session_id: session.id,
-        url: session.url,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return corsJsonResponse(req, {
+      session_id: session.id,
+      url: session.url,
+    });
   } catch (error) {
     console.error("Create checkout error:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: error.message === "Unauthorized" ? 401 : 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+    return corsErrorResponse(
+      req,
+      error.message,
+      error.message === "Unauthorized" ? 401 : 500
     );
   }
 });

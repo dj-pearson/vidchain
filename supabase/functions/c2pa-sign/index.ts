@@ -3,11 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { getCorsHeaders, handleCorsPreflightRequest, corsJsonResponse, corsErrorResponse } from "../_shared/cors.ts";
 
 // VidChain C2PA claim generator info
 const VIDCHAIN_CLAIM_GENERATOR = {
@@ -206,9 +202,8 @@ async function signManifest(manifest: VidChainManifest): Promise<{
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  const preflightResponse = handleCorsPreflightRequest(req);
+  if (preflightResponse) return preflightResponse;
 
   try {
     const supabaseClient = createClient(
@@ -232,10 +227,7 @@ serve(async (req) => {
     } = await supabaseUserClient.auth.getUser();
 
     if (!user) {
-      return new Response(
-        JSON.stringify({ error: 'Authentication required' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return corsJsonResponse(req, { error: 'Authentication required' }, 401);
     }
 
     const url = new URL(req.url);
@@ -256,10 +248,7 @@ serve(async (req) => {
       } = body;
 
       if (!mediaId || !verificationId) {
-        return new Response(
-          JSON.stringify({ error: 'mediaId and verificationId required' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return corsJsonResponse(req, { error: 'mediaId and verificationId required' }, 400);
       }
 
       // Get verification data
@@ -273,10 +262,7 @@ serve(async (req) => {
         .single();
 
       if (verError || !verification) {
-        return new Response(
-          JSON.stringify({ error: 'Verification not found' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return corsJsonResponse(req, { error: 'Verification not found' }, 404);
       }
 
       // Get media data
@@ -438,10 +424,7 @@ serve(async (req) => {
         signedAt: manifest.signature_info.time,
       };
 
-      return new Response(
-        JSON.stringify(result),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return corsJsonResponse(req, result);
     }
 
     // ==========================================
@@ -452,10 +435,7 @@ serve(async (req) => {
       const mediaType = url.searchParams.get('mediaType') || 'video';
 
       if (!mediaId) {
-        return new Response(
-          JSON.stringify({ error: 'mediaId required' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return corsJsonResponse(req, { error: 'mediaId required' }, 400);
       }
 
       const { data: manifest, error } = await supabaseClient
@@ -470,27 +450,15 @@ serve(async (req) => {
         .single();
 
       if (error || !manifest) {
-        return new Response(
-          JSON.stringify({ error: 'No signed manifest found' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return corsJsonResponse(req, { error: 'No signed manifest found' }, 404);
       }
 
-      return new Response(
-        JSON.stringify(manifest),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return corsJsonResponse(req, manifest);
     }
 
-    return new Response(
-      JSON.stringify({ error: 'Method not allowed' }),
-      { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return corsJsonResponse(req, { error: 'Method not allowed' }, 405);
   } catch (error) {
     console.error('C2PA signing error:', error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return corsErrorResponse(req, error.message, 500);
   }
 });
