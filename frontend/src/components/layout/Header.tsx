@@ -87,7 +87,8 @@ export function Header({ onMenuToggle, isSidebarOpen }: HeaderProps) {
             <div className="relative">
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-2 rounded-full p-1 hover:bg-accent"
+                className="flex items-center gap-2 rounded-full p-2 hover:bg-accent min-h-[44px] min-w-[44px]"
+                aria-label="User menu"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
                   <User className="h-4 w-4" />
@@ -104,7 +105,7 @@ export function Header({ onMenuToggle, isSidebarOpen }: HeaderProps) {
                     className="fixed inset-0 z-40"
                     onClick={() => setIsUserMenuOpen(false)}
                   />
-                  <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-md border bg-popover p-1 shadow-lg">
+                  <div className="absolute right-0 top-full z-50 mt-2 w-48 sm:w-56 max-w-[calc(100vw-2rem)] rounded-md border bg-popover p-1 shadow-lg">
                     <div className="px-3 py-2 text-sm text-muted-foreground">
                       {profile?.email}
                     </div>

@@ -230,23 +230,23 @@ export function Marketplace() {
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Type Filter */}
           <div className="flex rounded-md border">
             <button
-              className={`px-3 py-2 text-sm ${filterType === 'all' ? 'bg-primary text-primary-foreground' : ''}`}
+              className={`px-2 sm:px-3 py-2 text-xs sm:text-sm ${filterType === 'all' ? 'bg-primary text-primary-foreground' : ''}`}
               onClick={() => setFilterType('all')}
             >
               All
             </button>
             <button
-              className={`px-3 py-2 text-sm ${filterType === 'fixed_price' ? 'bg-primary text-primary-foreground' : ''}`}
+              className={`px-2 sm:px-3 py-2 text-xs sm:text-sm ${filterType === 'fixed_price' ? 'bg-primary text-primary-foreground' : ''}`}
               onClick={() => setFilterType('fixed_price')}
             >
               Buy Now
             </button>
             <button
-              className={`px-3 py-2 text-sm ${filterType === 'auction' ? 'bg-primary text-primary-foreground' : ''}`}
+              className={`px-2 sm:px-3 py-2 text-xs sm:text-sm ${filterType === 'auction' ? 'bg-primary text-primary-foreground' : ''}`}
               onClick={() => setFilterType('auction')}
             >
               Auctions
@@ -257,7 +257,7 @@ export function Marketplace() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="rounded-md border bg-background px-3 py-2 text-sm"
+            className="rounded-md border bg-background px-2 sm:px-3 py-2 text-xs sm:text-sm min-w-0 flex-shrink"
           >
             <option value="recent">Recently Listed</option>
             <option value="price_low">Price: Low to High</option>
@@ -267,7 +267,7 @@ export function Marketplace() {
           </select>
 
           {/* View Toggle */}
-          <div className="flex rounded-md border">
+          <div className="hidden sm:flex rounded-md border">
             <button
               className={`p-2 ${viewMode === 'grid' ? 'bg-primary text-primary-foreground' : ''}`}
               onClick={() => setViewMode('grid')}
@@ -282,7 +282,7 @@ export function Marketplace() {
             </button>
           </div>
 
-          <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
+          <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)} className="hidden sm:flex">
             <Filter className="mr-2 h-4 w-4" />
             Filters
           </Button>
@@ -325,13 +325,15 @@ function ListingCard({ listing, viewMode }: ListingCardProps) {
   if (viewMode === 'list') {
     return (
       <Card className="overflow-hidden">
-        <CardContent className="flex gap-4 p-4">
+        <CardContent className="flex gap-3 sm:gap-4 p-3 sm:p-4">
           {/* Thumbnail */}
-          <div className="relative aspect-video w-48 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+          <div className="relative aspect-video w-24 sm:w-32 md:w-48 flex-shrink-0 overflow-hidden rounded-md bg-muted">
             <img
               src={listing.thumbnail}
               alt={listing.title}
               className="h-full w-full object-cover"
+              loading="lazy"
+              decoding="async"
             />
             <div className="absolute bottom-1 right-1 rounded bg-black/75 px-1.5 py-0.5 text-xs text-white">
               {listing.duration}
@@ -342,9 +344,9 @@ function ListingCard({ listing, viewMode }: ListingCardProps) {
           </div>
 
           {/* Content */}
-          <div className="flex flex-1 flex-col justify-between">
+          <div className="flex flex-1 flex-col justify-between min-w-0">
             <div>
-              <Link to={ROUTES.nft(listing.id)} className="font-semibold hover:underline">
+              <Link to={ROUTES.nft(listing.id)} className="font-semibold hover:underline text-sm sm:text-base line-clamp-2">
                 {listing.title}
               </Link>
               <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
@@ -354,8 +356,8 @@ function ListingCard({ listing, viewMode }: ListingCardProps) {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="hidden sm:flex items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Eye className="h-4 w-4" /> {listing.stats.views}
                 </span>
@@ -364,21 +366,21 @@ function ListingCard({ listing, viewMode }: ListingCardProps) {
                 </span>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
                 {isAuction ? (
-                  <div className="text-right">
+                  <div className="text-left sm:text-right">
                     <p className="text-xs text-muted-foreground">Current Bid</p>
-                    <p className="font-bold">{listing.highestBid} {listing.currency}</p>
+                    <p className="font-bold text-sm sm:text-base">{listing.highestBid} {listing.currency}</p>
                   </div>
                 ) : (
-                  <div className="text-right">
+                  <div className="text-left sm:text-right">
                     <p className="text-xs text-muted-foreground">Price</p>
-                    <p className="font-bold">{listing.price} {listing.currency}</p>
+                    <p className="font-bold text-sm sm:text-base">{listing.price} {listing.currency}</p>
                   </div>
                 )}
                 <Link to={ROUTES.nft(listing.id)}>
-                  <Button size="sm">
-                    {isAuction ? 'Place Bid' : 'Buy Now'}
+                  <Button size="sm" className="whitespace-nowrap">
+                    {isAuction ? 'Bid' : 'Buy'}
                   </Button>
                 </Link>
               </div>
@@ -397,6 +399,8 @@ function ListingCard({ listing, viewMode }: ListingCardProps) {
           src={listing.thumbnail}
           alt={listing.title}
           className="h-full w-full object-cover"
+          loading="lazy"
+          decoding="async"
         />
         <div className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-xs text-white">
           {listing.duration}
