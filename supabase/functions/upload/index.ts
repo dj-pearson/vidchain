@@ -2,11 +2,7 @@
 // Handles video uploads with Mux integration
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders, handleCorsPreflightRequest, corsJsonResponse, corsErrorResponse } from "../_shared/cors.ts";
 
 interface UploadRequest {
   title: string;
@@ -30,9 +26,8 @@ interface MuxUploadResponse {
 
 Deno.serve(async (req: Request): Promise<Response> => {
   // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  const preflightResponse = handleCorsPreflightRequest(req);
+  if (preflightResponse) return preflightResponse;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -164,27 +159,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
       },
     });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        video_id: video.id,
-        mux_upload_url: muxData.data.url,
-        mux_upload_id: muxData.data.id,
-        supabase_upload_url: signedUrl?.signedUrl,
-        storage_path: storagePath,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return corsJsonResponse(req, {
+      success: true,
+      video_id: video.id,
+      mux_upload_url: muxData.data.url,
+      mux_upload_id: muxData.data.id,
+      supabase_upload_url: signedUrl?.signedUrl,
+      storage_path: storagePath,
+    });
   } catch (error) {
     console.error("Upload error:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: error.message === "Unauthorized" ? 401 : 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+    return corsErrorResponse(
+      req,
+      error.message,
+      error.message === "Unauthorized" ? 401 : 500
     );
   }
 });

@@ -3,11 +3,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import { crypto } from "https://deno.land/std@0.177.0/crypto/mod.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders, handleCorsPreflightRequest, corsJsonResponse, corsErrorResponse } from "../_shared/cors.ts";
 
 interface ProcessVerificationRequest {
   video_id: string;
@@ -23,9 +19,8 @@ interface PinataResponse {
 
 Deno.serve(async (req: Request): Promise<Response> => {
   // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  const preflightResponse = handleCorsPreflightRequest(req);
+  if (preflightResponse) return preflightResponse;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -70,16 +65,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
       .single();
 
     if (existingVerification) {
-      return new Response(
-        JSON.stringify({
-          error: "Video with this hash already verified",
-          existing_verification_id: existingVerification.id,
-        }),
-        {
-          status: 409,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      return corsJsonResponse(req, {
+        error: "Video with this hash already verified",
+        existing_verification_id: existingVerification.id,
+      }, 409);
     }
 
     // 5. Upload to IPFS via Pinata
@@ -166,25 +155,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
       });
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        verification,
-        sha256_hash: sha256Hash,
-        ipfs_cid: ipfsCid,
-      }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return corsJsonResponse(req, {
+      success: true,
+      verification,
+      sha256_hash: sha256Hash,
+      ipfs_cid: ipfsCid,
+    });
   } catch (error) {
     console.error("Process verification error:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return corsErrorResponse(req, error.message, 500);
   }
 });

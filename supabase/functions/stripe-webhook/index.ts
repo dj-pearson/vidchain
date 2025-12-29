@@ -3,11 +3,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import Stripe from "https://esm.sh/stripe@14.14.0?target=deno";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
-};
+import { getCorsHeaders, handleCorsPreflightRequest, corsJsonResponse, corsErrorResponse } from "../_shared/cors.ts";
 
 // Plan limits mapping
 const PLAN_LIMITS = {
@@ -43,9 +39,8 @@ const PLAN_LIMITS = {
 
 Deno.serve(async (req: Request): Promise<Response> => {
   // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  const preflightResponse = handleCorsPreflightRequest(req);
+  if (preflightResponse) return preflightResponse;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -238,21 +233,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
       payload: event,
     });
 
-    return new Response(
-      JSON.stringify({ received: true }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return corsJsonResponse(req, { received: true });
   } catch (error) {
     console.error("Stripe webhook error:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return corsErrorResponse(req, error.message, 500);
   }
 });
 
