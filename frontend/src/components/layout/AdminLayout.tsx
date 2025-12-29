@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { AdminSidebar } from './AdminSidebar';
 import { useRequireAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/stores/authStore';
 import { LoadingState } from '@/components/ui/Spinner';
 import { ROUTES } from '@/config/constants';
 import { Menu, X, Bell, Shield } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 
 export function AdminLayout() {
-  const { isLoading, user } = useRequireAuth();
+  const { isLoading } = useRequireAuth();
+  const { profile } = useAuthStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   if (isLoading) {
@@ -19,9 +20,8 @@ export function AdminLayout() {
     );
   }
 
-  // Check if user has admin role (mock check - would be actual role check)
-  // In production, this would check user.role === 'admin' from the database
-  const isAdmin = true; // TODO: Replace with actual admin check
+  // Check if user has admin or organization_admin role from their profile
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'organization_admin';
 
   if (!isAdmin) {
     return <Navigate to={ROUTES.dashboard} replace />;

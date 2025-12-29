@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
@@ -8,13 +8,11 @@ import { ROUTES } from '@/config/constants';
 import { formatRelativeTime } from '@/lib/utils';
 import {
   Search,
-  Filter,
   MoreVertical,
   User,
   Shield,
   Ban,
   CheckCircle,
-  XCircle,
   Mail,
   Wallet,
   Video,

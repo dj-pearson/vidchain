@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { ROUTES } from '@/config/constants';
@@ -11,7 +11,6 @@ import {
   Gavel,
   Eye,
   Edit,
-  Trash2,
   MoreVertical,
   Clock,
   DollarSign,

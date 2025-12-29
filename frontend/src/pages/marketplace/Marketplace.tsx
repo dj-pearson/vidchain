@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
-import { ROUTES, MARKETPLACE_CONFIG } from '@/config/constants';
+import { ROUTES } from '@/config/constants';
 import { formatRelativeTime } from '@/lib/utils';
 import {
   Search,

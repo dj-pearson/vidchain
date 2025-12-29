@@ -13,7 +13,6 @@ import {
   TrendingUp,
   Coins,
   FileText,
-  AlertTriangle,
   ArrowLeft,
 } from 'lucide-react';
 

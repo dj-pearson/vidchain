@@ -4,10 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import {
   Video,
-  Image,
-  FileText,
   Search,
-  Filter,
   MoreVertical,
   CheckCircle,
   XCircle,
