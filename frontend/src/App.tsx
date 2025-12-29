@@ -31,6 +31,7 @@ import {
 import { DMCASubmit } from '@/pages/dmca';
 import { ROUTES } from '@/config/constants';
 import { Web3Provider } from '@/lib/web3';
+import { ToastContainer } from '@/components/ui';
 
 
 // 404 page
@@ -53,6 +54,7 @@ function App() {
   return (
     <Web3Provider>
       <BrowserRouter>
+        <ToastContainer />
         <Routes>
           {/* Public routes */}
           <Route element={<PublicLayout />}>

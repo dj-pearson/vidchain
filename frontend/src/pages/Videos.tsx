@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
-import { LoadingState } from '@/components/ui/Spinner';
+import { SkeletonVideoCard } from '@/components/ui/Skeleton';
 import { ROUTES } from '@/config/constants';
 import {
   formatRelativeTime,
@@ -39,10 +39,6 @@ export function Videos() {
     }
     setMenuOpen(null);
   };
-
-  if (isLoading) {
-    return <LoadingState message="Loading videos..." />;
-  }
 
   if (error) {
     return (
@@ -86,7 +82,13 @@ export function Videos() {
       </div>
 
       {/* Video Grid */}
-      {filteredVideos?.length === 0 ? (
+      {isLoading ? (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <SkeletonVideoCard key={i} />
+          ))}
+        </div>
+      ) : filteredVideos?.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center py-12">
             <Video className="h-16 w-16 text-muted-foreground" />

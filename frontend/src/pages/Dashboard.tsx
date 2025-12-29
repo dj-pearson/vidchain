@@ -3,7 +3,7 @@ import { useVideos, useVerifications } from '@/hooks';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { LoadingState } from '@/components/ui/Spinner';
+import { SkeletonStatsCard, SkeletonList } from '@/components/ui/Skeleton';
 import { ROUTES } from '@/config/constants';
 import { formatRelativeTime, formatFileSize, truncate, getStatusBadgeVariant } from '@/lib/utils';
 import {
@@ -23,10 +23,6 @@ export function Dashboard() {
   });
 
   const isLoading = videosLoading || verificationsLoading;
-
-  if (isLoading) {
-    return <LoadingState message="Loading dashboard..." />;
-  }
 
   const totalVideos = videosData?.total || 0;
   const verifiedCount = verificationsData?.data.filter((v) => v.status === 'verified').length || 0;
@@ -52,49 +48,60 @@ export function Dashboard() {
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Videos</CardTitle>
-            <Video className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalVideos}</div>
-            <p className="text-xs text-muted-foreground">Uploaded to platform</p>
-          </CardContent>
-        </Card>
+        {isLoading ? (
+          <>
+            <SkeletonStatsCard />
+            <SkeletonStatsCard />
+            <SkeletonStatsCard />
+            <SkeletonStatsCard />
+          </>
+        ) : (
+          <>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Total Videos</CardTitle>
+                <Video className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalVideos}</div>
+                <p className="text-xs text-muted-foreground">Uploaded to platform</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Verified</CardTitle>
-            <CheckCircle className="h-4 w-4 text-success" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{verifiedCount}</div>
-            <p className="text-xs text-muted-foreground">Blockchain verified</p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Verified</CardTitle>
+                <CheckCircle className="h-4 w-4 text-success" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{verifiedCount}</div>
+                <p className="text-xs text-muted-foreground">Blockchain verified</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Pending</CardTitle>
-            <Clock className="h-4 w-4 text-warning" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{pendingCount}</div>
-            <p className="text-xs text-muted-foreground">Awaiting verification</p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Pending</CardTitle>
+                <Clock className="h-4 w-4 text-warning" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{pendingCount}</div>
+                <p className="text-xs text-muted-foreground">Awaiting verification</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">This Month</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{verifiedCount}</div>
-            <p className="text-xs text-muted-foreground">New verifications</p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">This Month</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{verifiedCount}</div>
+                <p className="text-xs text-muted-foreground">New verifications</p>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       {/* Recent Activity */}
@@ -109,7 +116,9 @@ export function Dashboard() {
             <CardDescription>Your latest uploaded videos</CardDescription>
           </CardHeader>
           <CardContent>
-            {videosData?.data.length === 0 ? (
+            {isLoading ? (
+              <SkeletonList count={4} />
+            ) : videosData?.data.length === 0 ? (
               <div className="py-8 text-center">
                 <Video className="mx-auto h-12 w-12 text-muted-foreground" />
                 <p className="mt-2 text-sm text-muted-foreground">No videos uploaded yet</p>
@@ -163,7 +172,9 @@ export function Dashboard() {
             <CardDescription>Latest verification activity</CardDescription>
           </CardHeader>
           <CardContent>
-            {verificationsData?.data.length === 0 ? (
+            {isLoading ? (
+              <SkeletonList count={4} />
+            ) : verificationsData?.data.length === 0 ? (
               <div className="py-8 text-center">
                 <Shield className="mx-auto h-12 w-12 text-muted-foreground" />
                 <p className="mt-2 text-sm text-muted-foreground">No verifications yet</p>
