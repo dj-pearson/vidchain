@@ -154,21 +154,21 @@ export function AdminUsers() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">User Management</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">User Management</h1>
           <p className="text-slate-400">
             {MOCK_USERS.length} total users
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="border-slate-700 text-slate-300">
+          <Button variant="outline" className="border-slate-700 text-slate-300 flex-1 sm:flex-none" size="sm">
             <Download className="mr-2 h-4 w-4" />
-            Export
+            <span className="hidden xs:inline">Export</span>
           </Button>
-          <Button>
+          <Button className="flex-1 sm:flex-none" size="sm">
             <UserPlus className="mr-2 h-4 w-4" />
-            Add User
+            <span className="hidden xs:inline">Add User</span>
           </Button>
         </div>
       </div>
@@ -289,8 +289,8 @@ export function AdminUsers() {
         </CardContent>
       </Card>
 
-      {/* Users Table */}
-      <Card className="bg-slate-800/50 border-slate-700">
+      {/* Users Table - Desktop */}
+      <Card className="hidden md:block bg-slate-800/50 border-slate-700">
         <CardContent className="p-0">
           <table className="w-full">
             <thead>
@@ -460,6 +460,154 @@ export function AdminUsers() {
           </table>
         </CardContent>
       </Card>
+
+      {/* Users Cards - Mobile */}
+      <div className="md:hidden space-y-4">
+        {filteredUsers.map((user) => (
+          <Card key={user.id} className="bg-slate-800/50 border-slate-700">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <input
+                    type="checkbox"
+                    checked={selectedUsers.includes(user.id)}
+                    onChange={() => toggleSelectUser(user.id)}
+                    className="rounded border-slate-600 flex-shrink-0"
+                  />
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-700">
+                    <User className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-white truncate">{user.fullName}</span>
+                      {user.verified && (
+                        <CheckCircle className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-500 truncate">{user.email}</p>
+                  </div>
+                </div>
+                <div className="relative flex-shrink-0">
+                  <button
+                    onClick={() => setMenuOpen(menuOpen === user.id ? null : user.id)}
+                    className="rounded p-2 hover:bg-slate-700 min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  >
+                    <MoreVertical className="h-4 w-4 text-slate-400" />
+                  </button>
+
+                  {menuOpen === user.id && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setMenuOpen(null)}
+                      />
+                      <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-md border border-slate-700 bg-slate-800 p-1 shadow-lg">
+                        <Link
+                          to={ROUTES.adminUser(user.id)}
+                          className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-slate-300 hover:bg-slate-700"
+                          onClick={() => setMenuOpen(null)}
+                        >
+                          <Eye className="h-4 w-4" />
+                          View Details
+                        </Link>
+                        <button className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-slate-300 hover:bg-slate-700">
+                          <Edit className="h-4 w-4" />
+                          Edit User
+                        </button>
+                        <button className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-slate-300 hover:bg-slate-700">
+                          <Mail className="h-4 w-4" />
+                          Send Email
+                        </button>
+                        {user.status === 'active' ? (
+                          <button className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-yellow-400 hover:bg-slate-700">
+                            <Ban className="h-4 w-4" />
+                            Suspend User
+                          </button>
+                        ) : (
+                          <button className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-green-400 hover:bg-slate-700">
+                            <CheckCircle className="h-4 w-4" />
+                            Reactivate
+                          </button>
+                        )}
+                        <button className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-red-400 hover:bg-slate-700">
+                          <Trash2 className="h-4 w-4" />
+                          Delete User
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <Badge
+                  variant={
+                    user.role === 'admin'
+                      ? 'destructive'
+                      : user.role === 'organization_admin'
+                      ? 'default'
+                      : 'secondary'
+                  }
+                >
+                  {user.role === 'organization_admin' ? 'Org Admin' : user.role}
+                </Badge>
+                {user.status === 'active' ? (
+                  <Badge className="bg-green-500/10 text-green-400">
+                    <CheckCircle className="mr-1 h-3 w-3" />
+                    Active
+                  </Badge>
+                ) : user.status === 'suspended' ? (
+                  <Badge className="bg-red-500/10 text-red-400">
+                    <Ban className="mr-1 h-3 w-3" />
+                    Suspended
+                  </Badge>
+                ) : (
+                  <Badge className="bg-yellow-500/10 text-yellow-400">
+                    Pending
+                  </Badge>
+                )}
+              </div>
+
+              {user.suspendReason && (
+                <p className="mt-2 flex items-center gap-1 text-xs text-red-400">
+                  <AlertTriangle className="h-3 w-3" />
+                  {user.suspendReason}
+                </p>
+              )}
+
+              <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-slate-500">Videos</p>
+                  <p className="text-white font-medium flex items-center gap-1">
+                    <Video className="h-3 w-3" /> {user.stats.videos}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Sales</p>
+                  <p className="text-white font-medium flex items-center gap-1">
+                    <ShoppingBag className="h-3 w-3" /> {user.stats.sales} ({user.stats.volume} ETH)
+                  </p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Joined</p>
+                  <p className="text-slate-300">{formatRelativeTime(user.createdAt)}</p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Last active</p>
+                  <p className="text-slate-300">{formatRelativeTime(user.lastActive)}</p>
+                </div>
+              </div>
+
+              {user.walletAddress && (
+                <div className="mt-3 flex items-center gap-1 text-xs text-slate-600">
+                  <Wallet className="h-3 w-3" />
+                  {user.walletAddress}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

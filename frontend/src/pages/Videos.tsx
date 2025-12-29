@@ -161,6 +161,8 @@ function VideoCard({ video, isMenuOpen, onMenuToggle, onDelete }: VideoCardProps
             src={video.thumbnail_url}
             alt={video.title}
             className="h-full w-full object-cover"
+            loading="lazy"
+            decoding="async"
           />
         ) : (
           <div className="flex h-full items-center justify-center">
@@ -175,15 +177,17 @@ function VideoCard({ video, isMenuOpen, onMenuToggle, onDelete }: VideoCardProps
           </div>
         )}
 
-        {/* Hover overlay */}
-        <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-          <Link to={ROUTES.video(video.id)}>
-            <Button size="sm" variant="secondary">
-              <Eye className="mr-1 h-4 w-4" />
-              View
-            </Button>
-          </Link>
-        </div>
+        {/* Tap/Hover overlay */}
+        <Link
+          to={ROUTES.video(video.id)}
+          className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
+          aria-label={`View ${video.title}`}
+        >
+          <Button size="sm" variant="secondary" tabIndex={-1}>
+            <Eye className="mr-1 h-4 w-4" />
+            View
+          </Button>
+        </Link>
       </div>
 
       {/* Content */}
@@ -208,7 +212,8 @@ function VideoCard({ video, isMenuOpen, onMenuToggle, onDelete }: VideoCardProps
           <div className="relative">
             <button
               onClick={onMenuToggle}
-              className="rounded p-1 hover:bg-accent"
+              className="rounded p-2 hover:bg-accent min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="Video options"
             >
               <MoreVertical className="h-4 w-4" />
             </button>
@@ -216,7 +221,7 @@ function VideoCard({ video, isMenuOpen, onMenuToggle, onDelete }: VideoCardProps
             {isMenuOpen && (
               <>
                 <div className="fixed inset-0 z-40" onClick={onMenuToggle} />
-                <div className="absolute right-0 top-full z-50 mt-1 w-40 rounded-md border bg-popover p-1 shadow-lg">
+                <div className="absolute right-0 top-full z-50 mt-1 w-40 max-w-[calc(100vw-2rem)] rounded-md border bg-popover p-1 shadow-lg">
                   <Link
                     to={ROUTES.video(video.id)}
                     className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm hover:bg-accent"

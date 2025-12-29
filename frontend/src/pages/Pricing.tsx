@@ -284,7 +284,8 @@ export function Pricing() {
             </p>
           </div>
 
-          <div className="mx-auto mt-12 max-w-5xl overflow-x-auto">
+          {/* Desktop table view */}
+          <div className="mx-auto mt-12 max-w-5xl overflow-x-auto hidden md:block">
             <table className="w-full">
               <thead>
                 <tr className="border-b">
@@ -341,6 +342,56 @@ export function Pricing() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile accordion view */}
+          <div className="md:hidden mt-8 space-y-4">
+            {plans.map((plan) => (
+              <Card key={plan.id} className={cn(plan.popular && 'border-2 border-purple-600')}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center justify-between">
+                    <span>{plan.name}</span>
+                    {plan.popular && (
+                      <Badge className="bg-purple-600 text-xs">Popular</Badge>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {featureDetails.map((category) => (
+                    <div key={category.category}>
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                        {category.category}
+                      </p>
+                      <div className="space-y-2">
+                        {category.features.map((feature, fi) => (
+                          <div key={fi} className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">{feature.name}</span>
+                            <span className="font-medium">
+                              {feature.all ? (
+                                <CheckCircle className="h-4 w-4 text-green-500" />
+                              ) : feature.key ? (
+                                typeof plan.features[feature.key as keyof typeof plan.features] ===
+                                'boolean' ? (
+                                  plan.features[feature.key as keyof typeof plan.features] ? (
+                                    <CheckCircle className="h-4 w-4 text-green-500" />
+                                  ) : (
+                                    <X className="h-4 w-4 text-gray-300" />
+                                  )
+                                ) : (
+                                  plan.features[feature.key as keyof typeof plan.features]
+                                )
+                              ) : (
+                                <X className="h-4 w-4 text-gray-300" />
+                              )}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>

@@ -12,6 +12,7 @@ import {
   Building,
   HelpCircle,
   FileText,
+  X,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -84,6 +85,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         )}
       >
         <div className="flex h-full flex-col overflow-y-auto p-4">
+          {/* Mobile close button */}
+          <button
+            onClick={onClose}
+            className="mb-4 flex items-center justify-center self-end rounded-md p-2 hover:bg-accent lg:hidden min-h-[44px] min-w-[44px]"
+            aria-label="Close menu"
+          >
+            <X className="h-5 w-5" />
+          </button>
+
           {/* Main navigation */}
           <nav className="space-y-1">
             {mainNavItems.map((item) => (
@@ -93,14 +103,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 onClick={onClose}
                 className={({ isActive }) =>
                   cn(
-                    'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                    'flex items-center gap-3 rounded-md px-3 py-2.5 min-h-[44px] text-sm font-medium transition-colors',
                     isActive
                       ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                   )
                 }
               >
-                <item.icon className="h-4 w-4" />
+                <item.icon className="h-5 w-5" />
                 {item.title}
               </NavLink>
             ))}
@@ -119,14 +129,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   onClick={onClose}
                   className={({ isActive }) =>
                     cn(
-                      'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                      'flex items-center gap-3 rounded-md px-3 py-2.5 min-h-[44px] text-sm font-medium transition-colors',
                       isActive
                         ? 'bg-primary text-primary-foreground'
                         : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                     )
                   }
                 >
-                  <item.icon className="h-4 w-4" />
+                  <item.icon className="h-5 w-5" />
                   {item.title}
                 </NavLink>
               ))}
@@ -139,18 +149,18 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               href="https://docs.vidchain.io"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              className="flex items-center gap-3 rounded-md px-3 py-2.5 min-h-[44px] text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
-              <FileText className="h-4 w-4" />
+              <FileText className="h-5 w-5" />
               Documentation
             </a>
             <a
               href="https://vidchain.io/support"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              className="flex items-center gap-3 rounded-md px-3 py-2.5 min-h-[44px] text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
-              <HelpCircle className="h-4 w-4" />
+              <HelpCircle className="h-5 w-5" />
               Support
             </a>
           </div>

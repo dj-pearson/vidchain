@@ -192,7 +192,7 @@ export function Upload() {
               </div>
             ) : (
               <div
-                className={`relative cursor-pointer rounded-lg border-2 border-dashed p-12 text-center transition-colors ${
+                className={`relative cursor-pointer rounded-lg border-2 border-dashed p-6 sm:p-8 md:p-12 text-center transition-colors ${
                   dragActive
                     ? 'border-primary bg-primary/5'
                     : 'border-muted-foreground/25 hover:border-primary'
@@ -208,12 +208,12 @@ export function Upload() {
                   onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
                   className="absolute inset-0 cursor-pointer opacity-0"
                 />
-                <UploadIcon className="mx-auto h-12 w-12 text-muted-foreground" />
-                <p className="mt-4 text-lg font-medium">
+                <UploadIcon className="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground" />
+                <p className="mt-3 sm:mt-4 text-base sm:text-lg font-medium">
                   Drag and drop your video here
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  or click to browse files
+                  or tap to browse files
                 </p>
               </div>
             )}

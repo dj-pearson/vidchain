@@ -162,7 +162,7 @@ export function VideoDetail() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid gap-6 md:gap-8 lg:grid-cols-3">
         {/* Main content */}
         <div className="lg:col-span-2">
           {/* Video Player */}
@@ -179,10 +179,10 @@ export function VideoDetail() {
 
           {/* Video Info */}
           <div className="mt-6">
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h1 className="text-2xl font-bold">{video.title}</h1>
-                <div className="mt-2 flex items-center gap-3">
+                <h1 className="text-xl sm:text-2xl font-bold">{video.title}</h1>
+                <div className="mt-2 flex flex-wrap items-center gap-2 sm:gap-3">
                   {getStatusBadge()}
                   <span className="text-sm text-muted-foreground">
                     <Calendar className="mr-1 inline h-4 w-4" />
@@ -196,13 +196,13 @@ export function VideoDetail() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
                   <Share2 className="mr-2 h-4 w-4" />
-                  Share
+                  <span className="hidden xs:inline">Share</span>
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
                   <Code className="mr-2 h-4 w-4" />
-                  Embed
+                  <span className="hidden xs:inline">Embed</span>
                 </Button>
               </div>
             </div>
@@ -240,13 +240,13 @@ export function VideoDetail() {
 
                   {/* Transaction Hash */}
                   {video.verification.transaction_hash && (
-                    <div className="flex items-center justify-between rounded-lg bg-muted p-3">
+                    <div className="flex flex-col gap-2 rounded-lg bg-muted p-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-center gap-2">
                         <LinkIcon className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">Transaction</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <code className="rounded bg-background px-2 py-1 text-sm">
+                        <code className="rounded bg-background px-2 py-1 text-xs sm:text-sm truncate max-w-[150px] sm:max-w-none">
                           {video.verification.transaction_hash.slice(0, 10)}...
                           {video.verification.transaction_hash.slice(-8)}
                         </code>
@@ -272,13 +272,13 @@ export function VideoDetail() {
 
                   {/* Owner Address */}
                   {onChainData?.owner && (
-                    <div className="flex items-center justify-between rounded-lg bg-muted p-3">
+                    <div className="flex flex-col gap-2 rounded-lg bg-muted p-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm font-medium">Owner</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <code className="rounded bg-background px-2 py-1 text-sm">
+                        <code className="rounded bg-background px-2 py-1 text-xs sm:text-sm">
                           {onChainData.owner.slice(0, 6)}...{onChainData.owner.slice(-4)}
                         </code>
                         <button
