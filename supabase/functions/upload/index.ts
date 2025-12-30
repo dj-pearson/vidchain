@@ -105,6 +105,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     // Create Mux direct upload URL
+    // Use specific CORS origin instead of wildcard for security
+    const allowedCorsOrigin = Deno.env.get("ALLOWED_ORIGINS")?.split(",")[0]?.trim() || "https://vidchain.io";
     const muxAuth = btoa(`${muxTokenId}:${muxTokenSecret}`);
     const muxResponse = await fetch("https://api.mux.com/video/v1/uploads", {
       method: "POST",
@@ -113,7 +115,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        cors_origin: "*",
+        cors_origin: allowedCorsOrigin,
         new_asset_settings: {
           playback_policy: ["public"],
           passthrough: video.id,

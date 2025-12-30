@@ -19,7 +19,8 @@ export const PINATA_GATEWAY = import.meta.env.VITE_PINATA_GATEWAY || 'https://ga
 
 // Video Processing
 export const MUX_TOKEN_ID = import.meta.env.VITE_MUX_TOKEN_ID || '';
-export const MUX_TOKEN_SECRET = import.meta.env.VITE_MUX_TOKEN_SECRET || '';
+// Note: MUX_TOKEN_SECRET should NEVER be exposed in frontend code
+// It is handled securely on the server side only
 
 // Upload Constraints
 export const MAX_FILE_SIZE_MB = 500;
