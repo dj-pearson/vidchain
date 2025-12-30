@@ -5,11 +5,13 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import { crypto } from "https://deno.land/std@0.177.0/crypto/mod.ts";
 import { ethers } from "https://esm.sh/ethers@6.9.2";
+import { getCorsHeaders, handleCorsPreflightRequest } from "./_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// Legacy CORS headers for backward compatibility (used in responses)
+// Note: getCorsHeaders() is now used to validate origins properly
+function getLegacyCorsHeaders(req: Request): Record<string, string> {
+  return getCorsHeaders(req);
+}
 
 // VidChainNFT ABI (for minting and verification)
 const VIDCHAIN_NFT_ABI = [
@@ -33,11 +35,11 @@ const functions: Record<string, (req: Request) => Promise<Response>> = {
 };
 
 async function handler(req: Request): Promise<Response> {
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+  // Handle CORS preflight with origin validation
+  const preflightResponse = handleCorsPreflightRequest(req);
+  if (preflightResponse) return preflightResponse;
 
+  const corsHeaders = getLegacyCorsHeaders(req);
   const url = new URL(req.url);
   const functionName = url.pathname.split("/").filter(Boolean)[0];
 
@@ -47,7 +49,7 @@ async function handler(req: Request): Promise<Response> {
     } catch (error) {
       console.error(`Error in ${functionName}:`, error);
       return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ error: "An error occurred processing your request" }),
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -85,6 +87,7 @@ function getPolygonProvider() {
 
 // Process verification function - Computes hash, uploads to IPFS, creates verification record
 async function processVerification(req: Request): Promise<Response> {
+  const corsHeaders = getCorsHeaders(req);
   const { video_id, user_id, auto_mint } = await req.json();
 
   if (!video_id || !user_id) {
@@ -284,6 +287,7 @@ async function processVerification(req: Request): Promise<Response> {
 
 // Mint NFT function - Mints verification NFT on Polygon blockchain
 async function mintNft(req: Request): Promise<Response> {
+  const corsHeaders = getCorsHeaders(req);
   const { verification_id, recipient_address } = await req.json();
 
   if (!verification_id) {
@@ -464,6 +468,7 @@ async function mintNft(req: Request): Promise<Response> {
 
 // Public verification lookup - Verifies video authenticity by token ID, tx hash, or SHA-256 hash
 async function verifyVideo(req: Request): Promise<Response> {
+  const corsHeaders = getCorsHeaders(req);
   const { query } = await req.json();
 
   if (!query) {
