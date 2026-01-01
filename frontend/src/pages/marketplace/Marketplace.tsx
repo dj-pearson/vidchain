@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -319,7 +319,8 @@ interface ListingCardProps {
   viewMode: ViewMode;
 }
 
-function ListingCard({ listing, viewMode }: ListingCardProps) {
+// Memoized ListingCard to prevent unnecessary re-renders when parent state changes
+const ListingCard = memo(function ListingCard({ listing, viewMode }: ListingCardProps) {
   const isAuction = listing.listingType === 'auction';
 
   if (viewMode === 'list') {
@@ -487,6 +488,6 @@ function ListingCard({ listing, viewMode }: ListingCardProps) {
       </CardContent>
     </Card>
   );
-}
+});
 
 export default Marketplace;
