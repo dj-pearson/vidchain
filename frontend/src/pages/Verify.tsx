@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
-import { LoadingState } from '@/components/ui/Spinner';
 import { AlertWithIcon } from '@/components/ui/Alert';
+import { SkeletonVerificationResult, MainContent, useToast } from '@/components/ui';
 import {
   truncateHash,
   formatDateTime,
@@ -29,6 +29,7 @@ import {
 export function Verify() {
   const [query, setQuery] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const toast = useToast();
   const {
     data: result,
     isLoading,
@@ -45,13 +46,14 @@ export function Verify() {
 
   const copyToClipboard = async (text: string) => {
     await navigator.clipboard.writeText(text);
+    toast.success('Copied!', 'Value copied to clipboard');
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <MainContent className="mx-auto max-w-3xl space-y-6">
       {/* Header */}
       <div className="text-center">
-        <Shield className="mx-auto h-16 w-16 text-primary" />
+        <Shield className="mx-auto h-16 w-16 text-primary" aria-hidden="true" />
         <h1 className="mt-4 text-3xl font-bold">Verify Video Authenticity</h1>
         <p className="mt-2 text-muted-foreground">
           Enter a token ID, transaction hash, or video hash to verify authenticity
@@ -79,7 +81,7 @@ export function Verify() {
       </Card>
 
       {/* Loading State */}
-      {isLoading && <LoadingState message="Verifying video..." />}
+      {isLoading && <SkeletonVerificationResult />}
 
       {/* Error State */}
       {error && (
@@ -151,7 +153,7 @@ export function Verify() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </MainContent>
   );
 }
 
@@ -299,13 +301,16 @@ function VerificationResult({ result, onCopy }: VerificationResultProps) {
 
 function CheckItem({ passed, label }: { passed: boolean; label: string }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3" role="listitem">
       {passed ? (
-        <CheckCircle className="h-5 w-5 text-success" />
+        <CheckCircle className="h-5 w-5 text-success" aria-hidden="true" />
       ) : (
-        <XCircle className="h-5 w-5 text-destructive" />
+        <XCircle className="h-5 w-5 text-destructive" aria-hidden="true" />
       )}
-      <span className={passed ? '' : 'text-muted-foreground'}>{label}</span>
+      <span className={passed ? '' : 'text-muted-foreground'}>
+        {label}
+        <span className="sr-only">: {passed ? 'Passed' : 'Failed'}</span>
+      </span>
     </div>
   );
 }
@@ -322,7 +327,7 @@ interface DetailRowProps {
 function DetailRow({ icon, label, value, fullValue, href, onCopy }: DetailRowProps) {
   return (
     <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2 text-muted-foreground">
+      <div className="flex items-center gap-2 text-muted-foreground" aria-hidden="true">
         {icon}
         <span>{label}</span>
       </div>
@@ -332,11 +337,12 @@ function DetailRow({ icon, label, value, fullValue, href, onCopy }: DetailRowPro
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-mono text-sm hover:underline"
+            className="font-mono text-sm hover:underline focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded"
             title={fullValue}
+            aria-label={`${label}: ${value}. Opens in new tab.`}
           >
             {value}
-            <ExternalLink className="ml-1 inline h-3 w-3" />
+            <ExternalLink className="ml-1 inline h-3 w-3" aria-hidden="true" />
           </a>
         ) : (
           <span className="font-mono text-sm" title={fullValue}>
@@ -346,10 +352,10 @@ function DetailRow({ icon, label, value, fullValue, href, onCopy }: DetailRowPro
         {onCopy && (
           <button
             onClick={onCopy}
-            className="rounded p-1 hover:bg-accent"
-            title="Copy to clipboard"
+            className="rounded p-1 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            aria-label={`Copy ${label} to clipboard`}
           >
-            <Copy className="h-4 w-4" />
+            <Copy className="h-4 w-4" aria-hidden="true" />
           </button>
         )}
       </div>
