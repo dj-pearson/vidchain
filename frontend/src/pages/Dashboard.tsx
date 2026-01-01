@@ -3,7 +3,7 @@ import { useVideos, useVerifications } from '@/hooks';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { LoadingState } from '@/components/ui/Spinner';
+import { SkeletonDashboard, MainContent } from '@/components/ui';
 import { ROUTES } from '@/config/constants';
 import { formatRelativeTime, formatFileSize, truncate, getStatusBadgeVariant } from '@/lib/utils';
 import {
@@ -25,7 +25,7 @@ export function Dashboard() {
   const isLoading = videosLoading || verificationsLoading;
 
   if (isLoading) {
-    return <LoadingState message="Loading dashboard..." />;
+    return <SkeletonDashboard />;
   }
 
   const totalVideos = videosData?.total || 0;
@@ -33,7 +33,7 @@ export function Dashboard() {
   const pendingCount = verificationsData?.data.filter((v) => v.status === 'pending').length || 0;
 
   return (
-    <div className="space-y-8">
+    <MainContent className="space-y-8">
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
@@ -212,6 +212,6 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </MainContent>
   );
 }

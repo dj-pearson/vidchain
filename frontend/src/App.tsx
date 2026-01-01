@@ -31,6 +31,7 @@ import {
 import { DMCASubmit } from '@/pages/dmca';
 import { ROUTES } from '@/config/constants';
 import { Web3Provider } from '@/lib/web3';
+import { ToastProvider, SkipLink } from '@/components/ui';
 
 
 // 404 page
@@ -51,9 +52,11 @@ function NotFound() {
 
 function App() {
   return (
-    <Web3Provider>
-      <BrowserRouter>
-        <Routes>
+    <ToastProvider>
+      <Web3Provider>
+        <BrowserRouter>
+          <SkipLink />
+          <Routes>
           {/* Public routes */}
           <Route element={<PublicLayout />}>
             <Route path={ROUTES.home} element={<HomePage />} />
@@ -97,9 +100,10 @@ function App() {
             <Route path={ROUTES.adminMarketplace} element={<AdminMarketplace />} />
             <Route path={ROUTES.adminFinance} element={<AdminFinance />} />
           </Route>
-        </Routes>
-      </BrowserRouter>
-    </Web3Provider>
+          </Routes>
+        </BrowserRouter>
+      </Web3Provider>
+    </ToastProvider>
   );
 }
 

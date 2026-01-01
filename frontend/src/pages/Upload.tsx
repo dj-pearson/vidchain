@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Progress } from '@/components/ui/Progress';
 import { AlertWithIcon } from '@/components/ui/Alert';
+import { useToast } from '@/components/ui';
 import { ROUTES, MAX_FILE_SIZE_MB, ALLOWED_VIDEO_TYPES } from '@/config/constants';
 import { formatFileSize } from '@/lib/utils';
 import { Upload as UploadIcon, Video, X, CheckCircle } from 'lucide-react';
@@ -21,6 +22,7 @@ export function Upload() {
   const navigate = useNavigate();
   const { upload, progress, isUploading, error: uploadError } = useUploadVideo();
   const createVerification = useCreateVerification();
+  const toast = useToast();
 
   const [formData, setFormData] = useState<FormData>({
     file: null,
@@ -96,30 +98,36 @@ export function Upload() {
 
     if (!formData.file) {
       setValidationError('Please select a video file');
+      toast.warning('No file selected', 'Please select a video file to upload');
       return;
     }
 
     if (!formData.title.trim()) {
       setValidationError('Please enter a title');
+      toast.warning('Title required', 'Please enter a title for your video');
       return;
     }
 
     try {
+      toast.info('Uploading video', 'Your video is being uploaded...');
       const video = await upload(formData.file, formData.title, formData.description);
 
       if (formData.autoMint) {
+        toast.info('Creating verification', 'Minting NFT for your video...');
         await createVerification.mutateAsync({
           videoId: video.id,
           autoMint: true,
         });
       }
 
+      toast.success('Upload complete!', 'Your video has been uploaded successfully');
       setUploadSuccess(true);
       setTimeout(() => {
         navigate(ROUTES.video(video.id));
       }, 2000);
     } catch (err) {
-      // Error is handled by the hook
+      const errorMessage = err instanceof Error ? err.message : 'Upload failed';
+      toast.error('Upload failed', errorMessage);
     }
   };
 
