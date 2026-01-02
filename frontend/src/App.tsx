@@ -2,11 +2,14 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppLayout, AuthLayout, PublicLayout, AdminLayout } from '@/components/layout';
 import { ROUTES } from '@/config/constants';
-import { Web3Provider } from '@/lib/web3';
+import { LazyWeb3Provider } from '@/lib/web3/LazyWeb3Provider';
 import { ToastProvider, SkipLink } from '@/components/ui';
 
 // Critical pages loaded synchronously for fast initial render
-import { Login, Signup, Dashboard } from '@/pages';
+// Using direct imports to avoid triggering barrel file that breaks code splitting
+import { Login } from '@/pages/auth/Login';
+import { Signup } from '@/pages/auth/Signup';
+import { Dashboard } from '@/pages/Dashboard';
 
 // Lazy-loaded pages for code splitting
 const Upload = lazy(() => import('@/pages/Upload').then(m => ({ default: m.Upload })));
@@ -63,7 +66,7 @@ function NotFound() {
 function App() {
   return (
     <ToastProvider>
-      <Web3Provider>
+      <LazyWeb3Provider>
         <BrowserRouter>
           <SkipLink />
           <Suspense fallback={<PageLoader />}>
@@ -114,7 +117,7 @@ function App() {
             </Routes>
           </Suspense>
         </BrowserRouter>
-      </Web3Provider>
+      </LazyWeb3Provider>
     </ToastProvider>
   );
 }

@@ -7,8 +7,9 @@ export {
   VIDCHAIN_NFT_ABI,
 } from './config';
 
-// Web3 provider
+// Web3 provider - use LazyWeb3Provider for better code splitting
 export { Web3Provider } from './provider';
+export { LazyWeb3Provider } from './LazyWeb3Provider';
 
 // Hooks
 export {
