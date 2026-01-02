@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
-import { WalletButton } from '@/components/wallet';
+import { LazyWalletButton } from '@/components/wallet/LazyWalletButton';
 import { ROUTES } from '@/config/constants';
 import {
   Shield,
@@ -80,8 +80,8 @@ export function Header({ onMenuToggle, isSidebarOpen }: HeaderProps) {
 
         {/* Right side */}
         <div className="ml-auto flex items-center gap-4">
-          {/* Wallet connection button */}
-          <WalletButton showBalance={true} chainStatus="icon" />
+          {/* Wallet connection button - lazy loaded for better initial page load */}
+          <LazyWalletButton showBalance={true} chainStatus="icon" />
 
           {isAuthenticated ? (
             <div className="relative">

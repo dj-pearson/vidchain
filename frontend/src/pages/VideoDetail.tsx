@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '@/components/ui/Spinner';
 import { VideoPlayer } from '@/components/video';
-import { useVerifyToken, useVideoRecord } from '@/lib/web3';
+// Import directly from verification-hooks to avoid pulling in RainbowKit
+import { useVerifyToken, useVideoRecord } from '@/lib/web3/verification-hooks';
 import { supabase } from '@/lib/supabase';
 import {
   CheckCircle,
