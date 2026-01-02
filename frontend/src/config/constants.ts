@@ -6,7 +6,8 @@ export const IS_DEVELOPMENT = import.meta.env.DEV;
 
 // API URLs
 export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'http://localhost:54321';
-export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key-for-development';
+export const HAS_SUPABASE = !!(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
 
 // Blockchain Configuration
 export const POLYGON_CHAIN_ID = import.meta.env.VITE_POLYGON_NETWORK === 'mainnet' ? 137 : 80001;
