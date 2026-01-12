@@ -102,6 +102,11 @@ export function Footer() {
                   DMCA
                 </Link>
               </li>
+              <li>
+                <Link to="/accessibility" className="hover:text-foreground">
+                  Accessibility
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

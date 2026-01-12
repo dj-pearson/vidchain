@@ -28,6 +28,7 @@ const NFTDetail = lazy(() => import('@/pages/marketplace/NFTDetail').then(m => (
 const MyListings = lazy(() => import('@/pages/marketplace/MyListings').then(m => ({ default: m.MyListings })));
 const Wallet = lazy(() => import('@/pages/marketplace/Wallet').then(m => ({ default: m.Wallet })));
 const DMCASubmit = lazy(() => import('@/pages/dmca/DMCASubmit').then(m => ({ default: m.DMCASubmit })));
+const Accessibility = lazy(() => import('@/pages/Accessibility').then(m => ({ default: m.Accessibility })));
 
 // Lazy-loaded admin pages
 const AdminOverview = lazy(() => import('@/pages/admin/AdminOverview').then(m => ({ default: m.AdminOverview })));
@@ -81,6 +82,8 @@ function App() {
               <Route path="/marketplace/:id" element={<NFTDetail />} />
               {/* DMCA routes (public) */}
               <Route path={ROUTES.dmcaSubmit} element={<DMCASubmit />} />
+              {/* Accessibility */}
+              <Route path={ROUTES.accessibility} element={<Accessibility />} />
               <Route path="*" element={<NotFound />} />
             </Route>
 
