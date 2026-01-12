@@ -1,9 +1,14 @@
-import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { lazy, Suspense, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AppLayout, AuthLayout, PublicLayout, AdminLayout } from '@/components/layout';
 import { ROUTES } from '@/config/constants';
 import { LazyWeb3Provider } from '@/lib/web3/LazyWeb3Provider';
 import { ToastProvider, SkipLink } from '@/components/ui';
+import {
+  KeyboardShortcutsDialog,
+  useKeyboardShortcuts,
+} from '@/components/ui/KeyboardShortcutsDialog';
+import { useAnnounce } from '@/components/ui/Accessibility';
 
 // Critical pages loaded synchronously for fast initial render
 // Using direct imports to avoid triggering barrel file that breaks code splitting
@@ -28,6 +33,7 @@ const NFTDetail = lazy(() => import('@/pages/marketplace/NFTDetail').then(m => (
 const MyListings = lazy(() => import('@/pages/marketplace/MyListings').then(m => ({ default: m.MyListings })));
 const Wallet = lazy(() => import('@/pages/marketplace/Wallet').then(m => ({ default: m.Wallet })));
 const DMCASubmit = lazy(() => import('@/pages/dmca/DMCASubmit').then(m => ({ default: m.DMCASubmit })));
+const Accessibility = lazy(() => import('@/pages/Accessibility').then(m => ({ default: m.Accessibility })));
 
 // Lazy-loaded admin pages
 const AdminOverview = lazy(() => import('@/pages/admin/AdminOverview').then(m => ({ default: m.AdminOverview })));
@@ -40,9 +46,103 @@ const AdminFinance = lazy(() => import('@/pages/admin/AdminFinance').then(m => (
 // Loading fallback component
 function PageLoader() {
   return (
-    <div className="flex min-h-[60vh] items-center justify-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    <div
+      className="flex min-h-[60vh] items-center justify-center"
+      role="status"
+      aria-label="Loading page content"
+    >
+      <div
+        className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent motion-reduce:animate-none"
+        aria-hidden="true"
+      />
+      <span className="sr-only">Loading...</span>
     </div>
+  );
+}
+
+// Route announcer for screen readers
+function RouteAnnouncer() {
+  const location = useLocation();
+  const announce = useAnnounce();
+
+  useEffect(() => {
+    // Get page title from document or generate from pathname
+    const getPageTitle = () => {
+      // Wait a tick for the page to render and set document.title
+      setTimeout(() => {
+        const title = document.title || 'Page';
+        announce(`Navigated to ${title}`, 'polite');
+      }, 100);
+    };
+
+    getPageTitle();
+  }, [location.pathname, announce]);
+
+  return null;
+}
+
+// App content with accessibility features
+function AppContent() {
+  const keyboardShortcuts = useKeyboardShortcuts();
+
+  return (
+    <>
+      <SkipLink />
+      <RouteAnnouncer />
+      <KeyboardShortcutsDialog
+        isOpen={keyboardShortcuts.isOpen}
+        onClose={keyboardShortcuts.close}
+      />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* Public routes */}
+          <Route element={<PublicLayout />}>
+            <Route path={ROUTES.home} element={<HomePage />} />
+            <Route path={ROUTES.verify} element={<Verify />} />
+            <Route path={ROUTES.howItWorks} element={<HowItWorks />} />
+            <Route path={ROUTES.pricing} element={<Pricing />} />
+            <Route path={ROUTES.marketplace} element={<Marketplace />} />
+            <Route path="/marketplace/:id" element={<NFTDetail />} />
+            {/* DMCA routes (public) */}
+            <Route path={ROUTES.dmcaSubmit} element={<DMCASubmit />} />
+            {/* Accessibility */}
+            <Route path={ROUTES.accessibility} element={<Accessibility />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+
+          {/* Auth routes */}
+          <Route element={<AuthLayout />}>
+            <Route path={ROUTES.login} element={<Login />} />
+            <Route path={ROUTES.signup} element={<Signup />} />
+          </Route>
+
+          {/* Protected routes */}
+          <Route element={<AppLayout />}>
+            <Route path={ROUTES.dashboard} element={<Dashboard />} />
+            <Route path={ROUTES.upload} element={<Upload />} />
+            <Route path={ROUTES.videos} element={<Videos />} />
+            <Route path="/videos/:id" element={<VideoDetail />} />
+            <Route path={ROUTES.settings} element={<Settings />} />
+            <Route path={ROUTES.apiKeys} element={<ApiKeys />} />
+            <Route path={ROUTES.billing} element={<Billing />} />
+            <Route path={ROUTES.organization} element={<Organization />} />
+            {/* Marketplace routes (protected) */}
+            <Route path={ROUTES.myListings} element={<MyListings />} />
+            <Route path={ROUTES.wallet} element={<Wallet />} />
+          </Route>
+
+          {/* Admin routes */}
+          <Route element={<AdminLayout />}>
+            <Route path={ROUTES.adminDashboard} element={<AdminOverview />} />
+            <Route path={ROUTES.adminUsers} element={<AdminUsers />} />
+            <Route path={ROUTES.adminContent} element={<AdminContent />} />
+            <Route path={ROUTES.adminModeration} element={<AdminModeration />} />
+            <Route path={ROUTES.adminMarketplace} element={<AdminMarketplace />} />
+            <Route path={ROUTES.adminFinance} element={<AdminFinance />} />
+          </Route>
+        </Routes>
+      </Suspense>
+    </>
   );
 }
 
@@ -68,54 +168,7 @@ function App() {
     <ToastProvider>
       <LazyWeb3Provider>
         <BrowserRouter>
-          <SkipLink />
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-            {/* Public routes */}
-            <Route element={<PublicLayout />}>
-              <Route path={ROUTES.home} element={<HomePage />} />
-              <Route path={ROUTES.verify} element={<Verify />} />
-              <Route path={ROUTES.howItWorks} element={<HowItWorks />} />
-              <Route path={ROUTES.pricing} element={<Pricing />} />
-              <Route path={ROUTES.marketplace} element={<Marketplace />} />
-              <Route path="/marketplace/:id" element={<NFTDetail />} />
-              {/* DMCA routes (public) */}
-              <Route path={ROUTES.dmcaSubmit} element={<DMCASubmit />} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-
-            {/* Auth routes */}
-            <Route element={<AuthLayout />}>
-              <Route path={ROUTES.login} element={<Login />} />
-              <Route path={ROUTES.signup} element={<Signup />} />
-            </Route>
-
-            {/* Protected routes */}
-            <Route element={<AppLayout />}>
-              <Route path={ROUTES.dashboard} element={<Dashboard />} />
-              <Route path={ROUTES.upload} element={<Upload />} />
-              <Route path={ROUTES.videos} element={<Videos />} />
-              <Route path="/videos/:id" element={<VideoDetail />} />
-              <Route path={ROUTES.settings} element={<Settings />} />
-              <Route path={ROUTES.apiKeys} element={<ApiKeys />} />
-              <Route path={ROUTES.billing} element={<Billing />} />
-              <Route path={ROUTES.organization} element={<Organization />} />
-              {/* Marketplace routes (protected) */}
-              <Route path={ROUTES.myListings} element={<MyListings />} />
-              <Route path={ROUTES.wallet} element={<Wallet />} />
-            </Route>
-
-            {/* Admin routes */}
-            <Route element={<AdminLayout />}>
-              <Route path={ROUTES.adminDashboard} element={<AdminOverview />} />
-              <Route path={ROUTES.adminUsers} element={<AdminUsers />} />
-              <Route path={ROUTES.adminContent} element={<AdminContent />} />
-              <Route path={ROUTES.adminModeration} element={<AdminModeration />} />
-              <Route path={ROUTES.adminMarketplace} element={<AdminMarketplace />} />
-              <Route path={ROUTES.adminFinance} element={<AdminFinance />} />
-            </Route>
-            </Routes>
-          </Suspense>
+          <AppContent />
         </BrowserRouter>
       </LazyWeb3Provider>
     </ToastProvider>
