@@ -138,6 +138,8 @@ export const ROUTES = {
   dmcaPolicy: '/dmca/policy',
   dmcaCounter: '/dmca/counter',
   dmcaMyClaims: '/dmca/my-claims',
+  // Accessibility
+  accessibility: '/accessibility',
 } as const;
 
 // Token Contract Addresses

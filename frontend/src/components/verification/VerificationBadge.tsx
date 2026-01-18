@@ -19,6 +19,12 @@ interface VerificationBadgeProps {
 /**
  * VerificationBadge - An embeddable badge showing video verification status
  * Can be used by news organizations to display video authenticity
+ *
+ * Accessibility features:
+ * - Uses both color AND text/icons to convey status (color-blind safe)
+ * - Proper ARIA labels for screen readers
+ * - External links announce opening in new tab
+ * - Clear status descriptions
  */
 export function VerificationBadge({
   status,
@@ -38,6 +44,7 @@ export function VerificationBadge({
         return {
           icon: CheckCircle,
           label: 'Verified',
+          statusIndicator: '✓', // Text fallback for color-blind users
           description: 'Authenticity confirmed on blockchain',
           bgColor: 'bg-green-50 dark:bg-green-900/20',
           borderColor: 'border-green-200 dark:border-green-800',
@@ -48,6 +55,7 @@ export function VerificationBadge({
         return {
           icon: Clock,
           label: 'Pending',
+          statusIndicator: '⏳', // Text fallback for color-blind users
           description: 'Verification in progress',
           bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
           borderColor: 'border-yellow-200 dark:border-yellow-800',
@@ -58,6 +66,7 @@ export function VerificationBadge({
         return {
           icon: AlertCircle,
           label: 'Expired',
+          statusIndicator: '⊘', // Text fallback for color-blind users
           description: 'Verification has expired',
           bgColor: 'bg-gray-50 dark:bg-gray-900/20',
           borderColor: 'border-gray-200 dark:border-gray-800',
@@ -68,6 +77,7 @@ export function VerificationBadge({
         return {
           icon: AlertCircle,
           label: 'Unverified',
+          statusIndicator: '✗', // Text fallback for color-blind users
           description: 'Not verified on blockchain',
           bgColor: 'bg-red-50 dark:bg-red-900/20',
           borderColor: 'border-red-200 dark:border-red-800',
@@ -112,18 +122,19 @@ export function VerificationBadge({
         target="_blank"
         rel="noopener noreferrer"
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-full border transition-opacity hover:opacity-80',
+          'inline-flex items-center gap-1.5 rounded-full border transition-opacity hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
           config.bgColor,
           config.borderColor,
           sizes.container,
           className
         )}
-        title={`VidChain: ${config.label} - ${config.description}`}
+        aria-label={`VidChain verification status: ${config.label}. ${config.description}. Opens in new tab.`}
       >
-        <Icon className={cn(sizes.icon, config.iconColor)} />
+        <Icon className={cn(sizes.icon, config.iconColor)} aria-hidden="true" />
         <span className={cn(sizes.text, 'font-medium', config.textColor)}>
           {config.label}
         </span>
+        <span className="sr-only">(opens in new tab)</span>
       </a>
     );
   }
@@ -131,16 +142,17 @@ export function VerificationBadge({
   // Detailed variant - full information card
   if (variant === 'detailed') {
     return (
-      <div
+      <article
         className={cn(
           'rounded-lg border p-4',
           config.bgColor,
           config.borderColor,
           className
         )}
+        aria-label={`Verification status: ${config.label}`}
       >
         <div className="flex items-start gap-3">
-          <div className={cn('rounded-full p-2', config.bgColor)}>
+          <div className={cn('rounded-full p-2', config.bgColor)} aria-hidden="true">
             <Icon className={cn('h-6 w-6', config.iconColor)} />
           </div>
           <div className="flex-1 min-w-0">
@@ -148,34 +160,43 @@ export function VerificationBadge({
               <span className={cn('font-semibold', config.textColor)}>
                 {config.label}
               </span>
-              <Shield className="h-4 w-4 text-muted-foreground" />
+              <Shield className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               <span className="text-xs text-muted-foreground">VidChain</span>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
               {config.description}
             </p>
             {(tokenId || timestamp) && (
-              <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-                {tokenId && <p>Token ID: #{tokenId}</p>}
-                {timestamp && (
-                  <p>Verified: {new Date(timestamp).toLocaleDateString()}</p>
+              <dl className="mt-2 space-y-1 text-xs text-muted-foreground">
+                {tokenId && (
+                  <>
+                    <dt className="sr-only">Token ID</dt>
+                    <dd>Token ID: #{tokenId}</dd>
+                  </>
                 )}
-              </div>
+                {timestamp && (
+                  <>
+                    <dt className="sr-only">Verification date</dt>
+                    <dd>Verified: {new Date(timestamp).toLocaleDateString()}</dd>
+                  </>
+                )}
+              </dl>
             )}
             {showLink && (
               <a
                 href={verifyUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded"
               >
                 View certificate
-                <ExternalLink className="h-3 w-3" />
+                <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                <span className="sr-only">(opens in new tab)</span>
               </a>
             )}
           </div>
         </div>
-      </div>
+      </article>
     );
   }
 
@@ -186,26 +207,27 @@ export function VerificationBadge({
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        'inline-flex items-center gap-2 rounded-lg border transition-all hover:shadow-sm',
+        'inline-flex items-center gap-2 rounded-lg border transition-all hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
         config.bgColor,
         config.borderColor,
         sizes.container,
         className
       )}
+      aria-label={`VidChain verification status: ${config.label}. ${config.description}. Opens in new tab.`}
     >
-      <Icon className={cn(sizes.icon, config.iconColor)} />
+      <Icon className={cn(sizes.icon, config.iconColor)} aria-hidden="true" />
       <div className="flex flex-col">
         <span className={cn(sizes.text, 'font-medium leading-tight', config.textColor)}>
           {config.label}
         </span>
         {size !== 'sm' && (
-          <span className="text-xs text-muted-foreground leading-tight">
+          <span className="text-xs text-muted-foreground leading-tight" aria-hidden="true">
             VidChain Verified
           </span>
         )}
       </div>
       {showLink && size === 'lg' && (
-        <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" />
+        <ExternalLink className="h-4 w-4 ml-auto text-muted-foreground" aria-hidden="true" />
       )}
     </a>
   );
