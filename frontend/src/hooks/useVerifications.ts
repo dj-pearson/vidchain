@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/authStore';
 import type { Verification, VerificationResult, PaginationParams, PaginatedResponse } from '@/types';
 import { DEFAULT_PAGE_SIZE } from '@/config/constants';
 import { useEffect } from 'react';
+import { trackEvent } from '@/lib/analytics';
 
 interface UseVerificationsOptions extends PaginationParams {
   status?: Verification['status'];
@@ -135,11 +136,15 @@ export function useCreateVerification() {
       });
 
       if (error) throw error;
+      trackEvent('verification_started', { video_id: videoId, auto_mint: autoMint });
       return data as Verification;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['verifications'] });
       queryClient.invalidateQueries({ queryKey: ['videos'] });
+      if (data?.status === 'verified') {
+        trackEvent('verification_completed', { verification_id: data.id });
+      }
     },
   });
 }
@@ -167,11 +172,22 @@ export function useMintNFT() {
       });
 
       if (error) throw error;
+      trackEvent('nft_mint_started', { verification_id: verificationId });
       return data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['verification', variables.verificationId] });
       queryClient.invalidateQueries({ queryKey: ['verifications'] });
+      trackEvent('nft_mint_completed', {
+        verification_id: variables.verificationId,
+        token_id: data?.token_id,
+      });
+    },
+    onError: (error, variables) => {
+      trackEvent('nft_mint_failed', {
+        verification_id: variables.verificationId,
+        error: error instanceof Error ? error.message : 'unknown',
+      });
     },
   });
 }
@@ -181,6 +197,7 @@ export function usePublicVerification(tokenIdOrHash: string) {
   return useQuery({
     queryKey: ['public-verification', tokenIdOrHash],
     queryFn: async (): Promise<VerificationResult> => {
+      trackEvent('verification_public_lookup', { query_type: tokenIdOrHash.startsWith('0x') ? 'hash' : 'token_id' });
       // Call public edge function
       const { data, error } = await supabase.functions.invoke('verify', {
         body: { query: tokenIdOrHash },

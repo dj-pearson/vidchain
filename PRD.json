@@ -1,0 +1,408 @@
+{
+  "project": "VidChain",
+  "branchName": "claude/identify-impact-improvements-nu2tz",
+  "description": "VidChain Platform Improvements - Analytics, Real-time Dashboard, and Roadmap Features",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Analytics & Event Tracking System",
+      "description": "As a platform operator, I need to track key user events (page views, uploads, verifications, mints) so I can measure platform health and make data-driven decisions.",
+      "acceptanceCriteria": [
+        "Analytics module created at frontend/src/lib/analytics.ts with typed event names",
+        "Events buffered and flushed in batches to minimize DB writes",
+        "Page view tracking via usePageTracking hook integrated in App.tsx",
+        "Auth events (login, signup, logout) tracked in useAuth hook",
+        "Video events (upload started/completed/failed, deleted) tracked in useVideos hook",
+        "Verification events (started, completed, failed, public lookup) tracked in useVerifications hook",
+        "NFT mint events (started, completed, failed) tracked in useVerifications hook",
+        "Events flush on page unload and visibility change",
+        "Graceful degradation if analytics_events table does not exist",
+        "Build passes with no new errors"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Implemented as a lightweight, privacy-respecting system that logs to Supabase analytics_events table with session-based buffering."
+    },
+    {
+      "id": "US-002",
+      "title": "Real-time Dashboard with Live Supabase Data",
+      "description": "As a user, I want my dashboard to show real aggregated statistics from the database and update in real-time when verification statuses change, so I have an accurate picture of my platform usage.",
+      "acceptanceCriteria": [
+        "useDashboardStats hook queries real counts from Supabase (total videos, verified, pending, this month)",
+        "All count queries run in parallel via Promise.all for performance",
+        "Stats auto-refresh every 60 seconds with 30-second stale time",
+        "useRealtimeVerifications hook subscribes to postgres_changes on verifications table",
+        "Dashboard invalidates stats, verifications, and videos queries on real-time update",
+        "Dashboard displays verification success rate with progress bar",
+        "Quick Actions section provides direct links to Upload, Verify, and Videos",
+        "Live indicator (pulsing dot) shows when verifications are in progress",
+        "Verification items show truncated transaction hash when available",
+        "Build passes with no new errors"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Dashboard now uses real Supabase queries instead of computing from paginated results. Real-time subscriptions auto-update when verification status changes."
+    },
+    {
+      "id": "US-003",
+      "title": "Analytics Events Database Migration",
+      "description": "As a developer, I need the analytics_events table created in the database so the analytics tracking system can persist events.",
+      "acceptanceCriteria": [
+        "Supabase migration creates analytics_events table with columns: id, event_name, properties (JSONB), page_path, referrer, session_id, user_id, created_at",
+        "RLS policy allows authenticated users to insert their own events",
+        "Index on event_name and created_at for efficient querying",
+        "Migration runs successfully against local and production Supabase"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "The frontend analytics module is implemented and gracefully handles missing table. This migration makes it persistent."
+    },
+    {
+      "id": "US-004",
+      "title": "Admin Dashboard with Real Data",
+      "description": "As an admin, I need the admin overview dashboard to show real platform metrics from the database instead of hardcoded mock data, so I can monitor platform health.",
+      "acceptanceCriteria": [
+        "Admin overview queries real user count, video count, verification count from Supabase",
+        "Admin users page queries real users table with pagination",
+        "Admin content page queries real videos with moderation status",
+        "All mock data constants (MOCK_STATS, MOCK_REPORTS, etc.) replaced with real queries",
+        "Admin role verification on all admin API calls",
+        "Build passes with no new errors"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "Currently all admin pages use hardcoded MOCK_STATS, MOCK_REPORTS, etc. This is blocking real platform operations."
+    },
+    {
+      "id": "US-005",
+      "title": "Rate Limiting Middleware",
+      "description": "As a platform operator, I need rate limiting on API endpoints to prevent abuse and ensure fair usage across users.",
+      "acceptanceCriteria": [
+        "Rate limiting middleware added to Supabase Edge Functions",
+        "Per-user rate limits based on subscription tier (Starter: 1000/day, Pro: 10000/day)",
+        "Global rate limit for public verification endpoint (60 requests/minute per IP)",
+        "Rate limit headers returned in responses (X-RateLimit-Limit, X-RateLimit-Remaining)",
+        "429 Too Many Requests response when limit exceeded",
+        "Rate limit data stored in Supabase or Redis-compatible cache"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "Currently zero rate limiting exists. Critical for production security."
+    },
+    {
+      "id": "US-006",
+      "title": "Error Monitoring Integration",
+      "description": "As a developer, I need error monitoring and performance tracking so I can identify and fix issues in production.",
+      "acceptanceCriteria": [
+        "Sentry SDK integrated in frontend with proper DSN configuration",
+        "Unhandled errors and promise rejections captured automatically",
+        "User context attached to error reports (anonymized user ID)",
+        "Source maps uploaded to Sentry during build for readable stack traces",
+        "Performance monitoring tracks page load and API call durations",
+        "Environment variable VITE_SENTRY_DSN controls initialization"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "No error monitoring currently exists. Flying blind on production errors."
+    },
+    {
+      "id": "US-007",
+      "title": "C2PA Manifest Reading & Validation",
+      "description": "As a user uploading video, I want VidChain to detect and validate any existing C2PA manifests in my media files, so the verification includes industry-standard provenance data.",
+      "acceptanceCriteria": [
+        "Edge function extracts C2PA manifests from uploaded MP4/MOV/WebM files",
+        "Certificate chain validation for manifest signatures",
+        "Parsed assertions stored in c2pa_manifests and c2pa_assertions tables",
+        "Verification result includes C2PA provenance data when available",
+        "UI displays C2PA manifest info on video detail page",
+        "Graceful handling of files without C2PA manifests"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "CRITICAL for enterprise/news adoption. C2PA is backed by Adobe, Microsoft, BBC, Sony. Schema exists in edge functions but not implemented.",
+      "dependsOn": ["US-003"]
+    },
+    {
+      "id": "US-008",
+      "title": "C2PA Manifest Signing",
+      "description": "As a platform, I need to sign verified content with VidChain's own C2PA manifest so downstream consumers can validate the provenance chain.",
+      "acceptanceCriteria": [
+        "Edge function generates VidChain C2PA assertions (verified status, blockchain hash, IPFS CID)",
+        "Manifest signed with VidChain X.509 certificate",
+        "Signed manifest embedded in downloadable media file",
+        "Certificate management via environment variables (HSM in production)",
+        "Manifest includes both hard binding (hash) and soft binding (thumbnail)"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "Requires X.509 certificate procurement. Depends on C2PA reading being implemented first.",
+      "dependsOn": ["US-007"]
+    },
+    {
+      "id": "US-009",
+      "title": "AI Detection API Integration",
+      "description": "As a user, I want uploaded videos analyzed for AI generation and deepfake indicators so I can trust the verification results include tampering detection.",
+      "acceptanceCriteria": [
+        "ai-detection edge function calls at least one real AI detection API (Hive AI primary)",
+        "Results include: ai_generated_score, deepfake_probability, manipulation_detected",
+        "Scores stored in content_moderation table (schema already exists)",
+        "Verification result includes AI detection summary",
+        "Fallback to secondary provider (Sensity AI) if primary fails",
+        "API keys managed via environment variables"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "Schema and mock edge function exist. Need to integrate real API providers. Hive AI is recommended primary."
+    },
+    {
+      "id": "US-010",
+      "title": "Perceptual Hashing Implementation",
+      "description": "As a platform operator, I need perceptual hashing computed on uploaded videos so duplicate and near-duplicate content can be detected.",
+      "acceptanceCriteria": [
+        "pHash, dHash, and aHash algorithms implemented in video-processor service",
+        "Frame sampling strategy: 1 frame/second for videos under 60s, 1 frame/5s for longer",
+        "Hashes stored in perceptual_hash_index table (schema exists)",
+        "find_similar_videos() function returns matches above configurable similarity threshold",
+        "Duplicate detection result shown on upload confirmation page",
+        "Hamming distance comparison for hash similarity"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "Database schema and find_similar_videos() function exist but no code computing actual hashes."
+    },
+    {
+      "id": "US-011",
+      "title": "Email Notification System",
+      "description": "As a user, I want to receive email notifications when my video verification completes, fails, or when important account events occur.",
+      "acceptanceCriteria": [
+        "Email service integrated (Resend recommended at $20/month for 50k emails)",
+        "Verification complete notification with token ID and transaction link",
+        "Verification failed notification with error details",
+        "Welcome email on signup",
+        "Email templates stored and rendered server-side",
+        "Unsubscribe link in all marketing emails",
+        "Database trigger fires send-email edge function on verification status change"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": "Email templates partially exist. send-email edge function exists but no service is connected."
+    },
+    {
+      "id": "US-012",
+      "title": "Enhanced Embeddable Badge System",
+      "description": "As a content creator, I want embeddable verification badges that I can add to my website, so viewers can see my content is verified without leaving my site.",
+      "acceptanceCriteria": [
+        "Dynamic HTML badge with real-time verification status",
+        "SVG badge with customizable size, theme (light/dark), and detail level",
+        "QR code linking to verification page",
+        "JSON-LD structured data for SEO benefits",
+        "Copy-to-clipboard for embed code (HTML snippet, React component, WordPress shortcode)",
+        "Badge renders correctly in iframes across major browsers",
+        "Badge loads verification status from public API endpoint"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "Basic badge implementation exists. EmbedGenerator component exists but needs enhancement."
+    },
+    {
+      "id": "US-013",
+      "title": "Comprehensive Test Suite",
+      "description": "As a developer, I need a comprehensive test suite covering critical paths so I can confidently make changes without breaking functionality.",
+      "acceptanceCriteria": [
+        "Unit tests for all custom hooks (useAuth, useVideos, useVerifications, useDashboard, useAnalytics)",
+        "Unit tests for utility functions (lib/utils.ts, lib/analytics.ts)",
+        "Integration tests for video upload flow (mock Supabase)",
+        "Integration tests for verification flow (mock edge functions)",
+        "Component tests for Dashboard, Upload, Verify, and VideoDetail pages",
+        "Test coverage above 50% for hooks/ and lib/ directories",
+        "CI-compatible test command (npm run test:run) passes"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": "Currently only 2 test files exist (Button.test.tsx, VerificationBadge.test.tsx) for 8,260 lines of code."
+    },
+    {
+      "id": "US-014",
+      "title": "Admin Analytics Dashboard",
+      "description": "As an admin, I want an analytics dashboard showing platform-wide metrics (event counts, popular pages, verification funnel, error rates) using the analytics_events data.",
+      "acceptanceCriteria": [
+        "Admin analytics page at /admin/analytics route (route already defined)",
+        "Page view counts over time (daily/weekly/monthly)",
+        "Verification funnel: uploads -> verifications started -> completed -> minted",
+        "Top pages by view count",
+        "Error rate tracking (failed verifications / total verifications)",
+        "Data sourced from analytics_events table",
+        "Date range filter (7d, 30d, 90d)"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": "Route is defined in constants but page component not implemented. Depends on analytics events table existing.",
+      "dependsOn": ["US-003"]
+    },
+    {
+      "id": "US-015",
+      "title": "Mobile SDK Foundation",
+      "description": "As a mobile developer, I need an SDK for iOS and Android that enables capture-time verification with device attestation.",
+      "acceptanceCriteria": [
+        "iOS SDK (Swift) with camera capture and per-frame SHA-256 hashing",
+        "Android SDK (Kotlin) with camera capture and per-frame SHA-256 hashing",
+        "Device attestation via Secure Enclave (iOS) and TEE (Android)",
+        "Sensor data capture (accelerometer, gyroscope, GPS) embedded in metadata",
+        "SDK uploads to VidChain API with authentication",
+        "Sample app demonstrating capture-to-verification flow"
+      ],
+      "priority": 15,
+      "passes": false,
+      "notes": "Planned but not started. Critical for capture-time provenance. mobile-sdk/ directory exists but is empty."
+    },
+    {
+      "id": "US-016",
+      "title": "Frame-Level Merkle Tree Hashing",
+      "description": "As a forensic investigator, I need frame-level verification so I can identify exactly which frames in a video were tampered with.",
+      "acceptanceCriteria": [
+        "FFmpeg extracts per-frame hashes during video processing",
+        "Merkle tree constructed from frame hashes",
+        "Root hash stored on-chain as part of NFT metadata",
+        "Frame-level verification API accepts frame number and returns proof",
+        "UI shows which frames are verified vs potentially modified",
+        "Efficient proof size (O(log n) for any single frame)"
+      ],
+      "priority": 16,
+      "passes": false,
+      "notes": "Advanced forensic feature. Requires video-processor service enhancement."
+    },
+    {
+      "id": "US-017",
+      "title": "Photo Verification Support",
+      "description": "As a user, I want to verify photos (not just videos) with the same blockchain + IPFS pipeline, so photographers and journalists can prove image authenticity.",
+      "acceptanceCriteria": [
+        "Photo upload support (JPEG, PNG, WebP, HEIC) with file validation",
+        "EXIF metadata extraction and storage",
+        "SHA-256 and perceptual hashing for images",
+        "Error Level Analysis (ELA) for splice/clone detection",
+        "Photo verification record in database (schema partially exists)",
+        "Verification badge for photos",
+        "Photo detail page with metadata display"
+      ],
+      "priority": 17,
+      "passes": false,
+      "notes": "Schema partially exists. photo-verify edge function exists but not connected to frontend."
+    },
+    {
+      "id": "US-018",
+      "title": "Legal Evidence Package Generation",
+      "description": "As a legal professional, I need court-admissible evidence packages that bundle verification data, chain of custody, and timestamps into a signed PDF.",
+      "acceptanceCriteria": [
+        "PDF certificate with verification details, blockchain proof, and chain of custody",
+        "RFC 3161 compliant timestamp from trusted TSA",
+        "Digital signature on the evidence package",
+        "Includes screenshot of blockchain transaction",
+        "QR code linking to live verification page",
+        "Downloadable from verification detail page",
+        "legal-certificate edge function generates the package"
+      ],
+      "priority": 18,
+      "passes": false,
+      "notes": "legal-certificate edge function exists but not fully implemented. Important for enterprise/legal use cases."
+    },
+    {
+      "id": "US-019",
+      "title": "Marketplace Transaction System",
+      "description": "As a marketplace participant, I need to buy and sell verified video NFTs with real blockchain transactions, not just UI mockups.",
+      "acceptanceCriteria": [
+        "Create listing with price in MATIC/ETH",
+        "Purchase flow with wallet transaction signing",
+        "NFT ownership transfer on purchase via smart contract",
+        "Platform fee (2.5%) deducted automatically",
+        "Transaction history stored in marketplace_transactions table",
+        "Listing status updates (active, sold, cancelled)",
+        "Buyer and seller notifications"
+      ],
+      "priority": 19,
+      "passes": false,
+      "notes": "UI exists with mock data. Smart contract and Supabase tables exist. Need to wire up real transactions."
+    },
+    {
+      "id": "US-020",
+      "title": "SSO / Enterprise Authentication",
+      "description": "As an enterprise customer, I need SAML 2.0 and OIDC single sign-on so my team can use their corporate credentials.",
+      "acceptanceCriteria": [
+        "SAML 2.0 IdP configuration per organization",
+        "OIDC provider support (Okta, Azure AD, Google Workspace)",
+        "Organization-level user provisioning",
+        "Role mapping from IdP groups to VidChain roles",
+        "Audit logging for SSO events",
+        "Admin UI to configure SSO settings per organization"
+      ],
+      "priority": 20,
+      "passes": false,
+      "notes": "Enterprise feature. Supabase Auth supports SAML but needs configuration per organization."
+    },
+    {
+      "id": "US-021",
+      "title": "API Documentation (OpenAPI/Swagger)",
+      "description": "As a developer integrating VidChain, I need comprehensive API documentation so I can integrate verification into my own platform.",
+      "acceptanceCriteria": [
+        "OpenAPI 3.0 specification for all public endpoints",
+        "Interactive API documentation page (Swagger UI or Redoc)",
+        "Authentication guide with API key usage examples",
+        "Rate limit documentation per tier",
+        "Webhook event documentation",
+        "Code examples in JavaScript, Python, and cURL"
+      ],
+      "priority": 21,
+      "passes": false,
+      "notes": "No API documentation currently exists. Critical for developer adoption and self-serve integration."
+    },
+    {
+      "id": "US-022",
+      "title": "Invisible Watermarking",
+      "description": "As a content creator, I want invisible watermarks embedded in my verified videos so they can be traced back to the original even after re-encoding.",
+      "acceptanceCriteria": [
+        "DWT domain watermarking embedded in I-frames of verified videos",
+        "Watermark survives common transformations (re-encoding, cropping, compression)",
+        "Extraction API can recover watermark from watermarked video",
+        "Watermark contains verification token ID for tracing",
+        "Option to enable/disable watermarking per verification",
+        "Watermark is imperceptible to human viewers"
+      ],
+      "priority": 22,
+      "passes": false,
+      "notes": "Advanced feature from Phase 2 of roadmap. Requires FFmpeg-based video processing."
+    },
+    {
+      "id": "US-023",
+      "title": "Webhook System for Verification Events",
+      "description": "As a developer, I need webhook delivery for verification lifecycle events so my system can react to verification completions in real-time.",
+      "acceptanceCriteria": [
+        "Webhook URL configuration per user/organization via settings page",
+        "Events: verification.started, verification.completed, verification.failed, nft.minted",
+        "Payload includes verification details, token ID, transaction hash",
+        "Retry logic with exponential backoff (3 attempts)",
+        "Webhook delivery log in database",
+        "HMAC signature for payload verification",
+        "Test webhook button in settings UI"
+      ],
+      "priority": 23,
+      "passes": false,
+      "notes": "Critical for developer integrations. Enables automated workflows when verifications complete."
+    },
+    {
+      "id": "US-024",
+      "title": "Content Moderation Real Workflows",
+      "description": "As an admin, I need working content moderation workflows so reported content can be reviewed, actioned, and appealed through the existing moderation UI.",
+      "acceptanceCriteria": [
+        "Report submission creates real record in content_moderation table",
+        "Admin moderation queue shows real reports from database",
+        "Admin can approve, reject, or escalate reports",
+        "Content removal/hiding when moderation action is 'remove'",
+        "Appeal process creates counter-record and notifies admin",
+        "Audit trail for all moderation actions",
+        "Email notification to content owner on moderation action"
+      ],
+      "priority": 24,
+      "passes": false,
+      "notes": "UI exists in admin panel but uses mock data. Database tables exist. Need to wire up real CRUD operations."
+    }
+  ]
+}

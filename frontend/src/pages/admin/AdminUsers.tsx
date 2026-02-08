@@ -184,7 +184,7 @@ export function AdminUsers() {
   }, [handleKeyDown]);
 
   // Handle keyboard navigation within menu
-  const handleMenuKeyDown = (event: React.KeyboardEvent, userId: string) => {
+  const handleMenuKeyDown = (event: React.KeyboardEvent, _userId: string) => {
     const menu = menuRef.current;
     if (!menu) return;
 
@@ -231,7 +231,7 @@ export function AdminUsers() {
     return (
       <div className="relative">
         <button
-          ref={(el) => el && menuButtonRefs.current.set(user.id, el)}
+          ref={(el) => { if (el) menuButtonRefs.current.set(user.id, el); }}
           id={buttonId}
           onClick={() => setMenuOpen(menuOpen === user.id ? null : user.id)}
           className={`rounded p-2 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${

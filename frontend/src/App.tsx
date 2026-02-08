@@ -9,6 +9,7 @@ import {
   useKeyboardShortcuts,
 } from '@/components/ui/KeyboardShortcutsDialog';
 import { useAnnounce } from '@/components/ui/Accessibility';
+import { usePageTracking } from '@/hooks/useAnalytics';
 
 // Critical pages loaded synchronously for fast initial render
 // Using direct imports to avoid triggering barrel file that breaks code splitting
@@ -84,6 +85,7 @@ function RouteAnnouncer() {
 // App content with accessibility features
 function AppContent() {
   const keyboardShortcuts = useKeyboardShortcuts();
+  usePageTracking();
 
   return (
     <>
