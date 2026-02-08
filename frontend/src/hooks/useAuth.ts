@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
 import { signIn, signUp, resetPassword } from '@/lib/supabase';
 import { ROUTES } from '@/config/constants';
+import { trackEvent } from '@/lib/analytics';
 
 export function useAuth() {
   const navigate = useNavigate();
@@ -37,6 +38,7 @@ export function useAuth() {
         }
 
         if (data.user) {
+          trackEvent('auth_login');
           navigate(ROUTES.dashboard);
           return { success: true };
         }
@@ -67,6 +69,7 @@ export function useAuth() {
         }
 
         if (data.user) {
+          trackEvent('auth_signup');
           // User needs to confirm email
           return {
             success: true,
@@ -89,6 +92,7 @@ export function useAuth() {
   const logout = useCallback(async () => {
     try {
       setLoading(true);
+      trackEvent('auth_logout');
       await storeLogout();
       navigate(ROUTES.login);
     } catch (err) {

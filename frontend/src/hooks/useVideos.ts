@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import type { Video, PaginationParams, PaginatedResponse } from '@/types';
 import { DEFAULT_PAGE_SIZE } from '@/config/constants';
+import { trackEvent } from '@/lib/analytics';
 
 interface UseVideosOptions extends PaginationParams {
   status?: Video['status'];
@@ -129,6 +130,7 @@ export function useUploadVideo() {
   const uploadWithProgress = useCallback(
     async (file: File, title: string, description?: string) => {
       setUploadProgress(0);
+      trackEvent('video_upload_started', { file_size: file.size, mime_type: file.type });
 
       // Simulate progress for now (real implementation would use XMLHttpRequest)
       const progressInterval = setInterval(() => {
@@ -145,10 +147,12 @@ export function useUploadVideo() {
         const result = await uploadMutation.mutateAsync({ file, title, description });
         setUploadProgress(100);
         clearInterval(progressInterval);
+        trackEvent('video_upload_completed', { video_id: result.id, file_size: file.size });
         return result;
       } catch (error) {
         clearInterval(progressInterval);
         setUploadProgress(0);
+        trackEvent('video_upload_failed', { error: error instanceof Error ? error.message : 'unknown' });
         throw error;
       }
     },
@@ -191,8 +195,9 @@ export function useDeleteVideo() {
 
       if (deleteError) throw deleteError;
     },
-    onSuccess: () => {
+    onSuccess: (_, videoId) => {
       queryClient.invalidateQueries({ queryKey: ['videos'] });
+      trackEvent('video_deleted', { video_id: videoId });
     },
   });
 }
