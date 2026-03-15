@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { useAdminModeration, useAdminStats, useUpdateModerationStatus } from '@/hooks/useAdminData';
+import { formatRelativeTime } from '@/lib/utils';
 import {
   AlertTriangle,
   Shield,
@@ -12,25 +14,14 @@ import {
   MessageSquare,
   User,
   Video,
-  ThumbsUp,
-  ThumbsDown,
   Search,
   Ban,
   AlertOctagon,
   Scale,
+  Loader2,
 } from 'lucide-react';
 
-// Mock moderation data
-const MOCK_MODERATION_STATS = {
-  pendingReports: 23,
-  resolvedToday: 15,
-  resolvedThisWeek: 89,
-  avgResolutionTime: '2.5h',
-  falsePositiveRate: '12%',
-  appealsPending: 5,
-};
-
-const REPORT_TYPES = {
+const REPORT_TYPES: Record<string, { label: string; color: string }> = {
   copyright: { label: 'Copyright', color: 'red' },
   inappropriate: { label: 'Inappropriate', color: 'orange' },
   misinformation: { label: 'Misinformation', color: 'yellow' },
@@ -39,116 +30,30 @@ const REPORT_TYPES = {
   other: { label: 'Other', color: 'blue' },
 };
 
-const MOCK_REPORTS = [
-  {
-    id: '1',
-    contentId: 'video-123',
-    contentTitle: 'News Clip - Unverified Source',
-    contentType: 'video',
-    reportType: 'misinformation',
-    reportCount: 5,
-    reportedBy: '0x1234...5678',
-    description: 'This video contains false claims about medical treatments.',
-    status: 'pending',
-    priority: 'high',
-    createdAt: '2024-01-15T10:30:00Z',
-    contentOwner: 'user_456',
-  },
-  {
-    id: '2',
-    contentId: 'video-456',
-    contentTitle: 'Movie Clip - Warner Bros',
-    contentType: 'video',
-    reportType: 'copyright',
-    reportCount: 2,
-    reportedBy: 'DMCA Bot',
-    description: 'Unauthorized use of copyrighted material from Warner Bros.',
-    status: 'pending',
-    priority: 'high',
-    createdAt: '2024-01-15T09:15:00Z',
-    contentOwner: 'user_789',
-  },
-  {
-    id: '3',
-    contentId: 'video-789',
-    contentTitle: 'Spam Promotional Video',
-    contentType: 'video',
-    reportType: 'spam',
-    reportCount: 8,
-    reportedBy: 'Multiple Users',
-    description: 'Repetitive spam content promoting cryptocurrency scam.',
-    status: 'pending',
-    priority: 'medium',
-    createdAt: '2024-01-15T08:45:00Z',
-    contentOwner: 'user_spam123',
-  },
-  {
-    id: '4',
-    contentId: 'listing-321',
-    contentTitle: 'NFT Listing - Stolen Art',
-    contentType: 'listing',
-    reportType: 'copyright',
-    reportCount: 3,
-    reportedBy: 'Original Creator',
-    description: 'This NFT uses artwork stolen from my portfolio.',
-    status: 'under_review',
-    priority: 'high',
-    createdAt: '2024-01-14T16:20:00Z',
-    contentOwner: 'user_thief',
-    assignedTo: 'admin_1',
-  },
-  {
-    id: '5',
-    contentId: 'video-999',
-    contentTitle: 'Harassment Video',
-    contentType: 'video',
-    reportType: 'harassment',
-    reportCount: 1,
-    reportedBy: '0x9876...5432',
-    description: 'Video contains targeted harassment of an individual.',
-    status: 'pending',
-    priority: 'medium',
-    createdAt: '2024-01-14T14:00:00Z',
-    contentOwner: 'user_harasser',
-  },
-];
-
-const MOCK_APPEALS = [
-  {
-    id: '1',
-    originalReportId: 'report-100',
-    contentTitle: 'Educational Documentary',
-    appealReason: 'Content is educational and falls under fair use.',
-    status: 'pending',
-    submittedAt: '2024-01-14T12:00:00Z',
-    submittedBy: 'user_educator',
-  },
-  {
-    id: '2',
-    originalReportId: 'report-101',
-    contentTitle: 'Political Commentary',
-    appealReason: 'Factual news commentary, not misinformation.',
-    status: 'pending',
-    submittedAt: '2024-01-13T18:30:00Z',
-    submittedBy: 'user_journalist',
-  },
-];
-
 export function AdminModeration() {
   const [activeTab, setActiveTab] = useState<'reports' | 'appeals'>('reports');
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
-  const filteredReports = MOCK_REPORTS.filter((report) => {
-    const matchesSearch =
-      report.contentTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      report.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = typeFilter === 'all' || report.reportType === typeFilter;
-    const matchesPriority = priorityFilter === 'all' || report.priority === priorityFilter;
-    return matchesSearch && matchesType && matchesPriority;
+  const { data: stats, isLoading: statsLoading } = useAdminStats();
+  const { data: moderationData, isLoading: reportsLoading } = useAdminModeration({
+    search: searchQuery,
+    typeFilter: typeFilter === 'all' ? undefined : typeFilter,
+    priorityFilter: priorityFilter === 'all' ? undefined : priorityFilter,
+    page,
+    perPage: 20,
   });
+  const updateStatus = useUpdateModerationStatus();
+
+  const reports = moderationData?.reports ?? [];
+  const totalReports = moderationData?.total ?? 0;
+
+  const handleModAction = (reportId: string, action: 'approve' | 'dismiss' | 'remove' | 'warn') => {
+    updateStatus.mutate({ reportId, action });
+  };
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
@@ -179,7 +84,7 @@ export function AdminModeration() {
   };
 
   const getReportTypeBadge = (type: string) => {
-    const typeConfig = REPORT_TYPES[type as keyof typeof REPORT_TYPES] || REPORT_TYPES.other;
+    const typeConfig = REPORT_TYPES[type] || REPORT_TYPES.other;
     const colorClasses: Record<string, string> = {
       red: 'bg-red-500/10 text-red-400',
       orange: 'bg-orange-500/10 text-orange-400',
@@ -190,6 +95,8 @@ export function AdminModeration() {
     };
     return <Badge className={colorClasses[typeConfig.color]}>{typeConfig.label}</Badge>;
   };
+
+  const pendingCount = reports.filter((r: any) => r.status === 'pending').length;
 
   return (
     <div className="space-y-6">
@@ -210,7 +117,7 @@ export function AdminModeration() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -220,7 +127,7 @@ export function AdminModeration() {
               <div>
                 <p className="text-xs text-slate-400">Pending</p>
                 <p className="text-xl font-bold text-white">
-                  {MOCK_MODERATION_STATS.pendingReports}
+                  {statsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (stats?.pendingModeration ?? 0)}
                 </p>
               </div>
             </div>
@@ -236,7 +143,7 @@ export function AdminModeration() {
               <div>
                 <p className="text-xs text-slate-400">Resolved Today</p>
                 <p className="text-xl font-bold text-white">
-                  {MOCK_MODERATION_STATS.resolvedToday}
+                  {statsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (stats?.resolvedToday ?? 0)}
                 </p>
               </div>
             </div>
@@ -250,9 +157,9 @@ export function AdminModeration() {
                 <Clock className="h-5 w-5 text-blue-500" />
               </div>
               <div>
-                <p className="text-xs text-slate-400">Avg Resolution</p>
+                <p className="text-xs text-slate-400">Total Reports</p>
                 <p className="text-xl font-bold text-white">
-                  {MOCK_MODERATION_STATS.avgResolutionTime}
+                  {reportsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : totalReports}
                 </p>
               </div>
             </div>
@@ -266,41 +173,9 @@ export function AdminModeration() {
                 <Scale className="h-5 w-5 text-purple-500" />
               </div>
               <div>
-                <p className="text-xs text-slate-400">Appeals Pending</p>
+                <p className="text-xs text-slate-400">In Queue</p>
                 <p className="text-xl font-bold text-white">
-                  {MOCK_MODERATION_STATS.appealsPending}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-yellow-500/10 p-2">
-                <ThumbsDown className="h-5 w-5 text-yellow-500" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">False Positive</p>
-                <p className="text-xl font-bold text-white">
-                  {MOCK_MODERATION_STATS.falsePositiveRate}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="rounded-full bg-slate-500/10 p-2">
-                <Shield className="h-5 w-5 text-slate-500" />
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">This Week</p>
-                <p className="text-xl font-bold text-white">
-                  {MOCK_MODERATION_STATS.resolvedThisWeek}
+                  {reportsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : pendingCount}
                 </p>
               </div>
             </div>
@@ -318,7 +193,7 @@ export function AdminModeration() {
               : 'text-slate-400 hover:text-white'
           }`}
         >
-          Reports ({MOCK_REPORTS.filter((r) => r.status === 'pending').length})
+          Reports ({reportsLoading ? '...' : pendingCount})
         </button>
         <button
           onClick={() => setActiveTab('appeals')}
@@ -328,7 +203,7 @@ export function AdminModeration() {
               : 'text-slate-400 hover:text-white'
           }`}
         >
-          Appeals ({MOCK_APPEALS.length})
+          Appeals
         </button>
       </div>
 
@@ -345,13 +220,13 @@ export function AdminModeration() {
                       type="text"
                       placeholder="Search reports..."
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                       className="w-full rounded-lg border border-slate-600 bg-slate-700 py-2 pl-10 pr-4 text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none"
                     />
                   </div>
                   <select
                     value={typeFilter}
-                    onChange={(e) => setTypeFilter(e.target.value)}
+                    onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
                     className="rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
                   >
                     <option value="all">All Types</option>
@@ -363,7 +238,7 @@ export function AdminModeration() {
                   </select>
                   <select
                     value={priorityFilter}
-                    onChange={(e) => setPriorityFilter(e.target.value)}
+                    onChange={(e) => { setPriorityFilter(e.target.value); setPage(1); }}
                     className="rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
                   >
                     <option value="all">All Priority</option>
@@ -374,66 +249,82 @@ export function AdminModeration() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {filteredReports.map((report) => (
-                    <div
-                      key={report.id}
-                      onClick={() => setSelectedReport(report.id)}
-                      className={`cursor-pointer rounded-lg border p-4 transition-colors ${
-                        selectedReport === report.id
-                          ? 'border-blue-500 bg-blue-500/10'
-                          : report.priority === 'high'
-                          ? 'border-red-500/30 bg-red-500/5 hover:bg-red-500/10'
-                          : 'border-slate-700 bg-slate-700/30 hover:bg-slate-700/50'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-3">
-                          <div
-                            className={`rounded-full p-2 ${
-                              report.contentType === 'video'
-                                ? 'bg-purple-500/10 text-purple-500'
-                                : 'bg-blue-500/10 text-blue-500'
-                            }`}
-                          >
-                            {report.contentType === 'video' ? (
-                              <Video className="h-4 w-4" />
-                            ) : (
-                              <Flag className="h-4 w-4" />
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <h4 className="font-medium text-white">
-                                {report.contentTitle}
-                              </h4>
-                              {getReportTypeBadge(report.reportType)}
-                              {getPriorityBadge(report.priority)}
-                              {getStatusBadge(report.status)}
+                {reportsLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                  </div>
+                ) : reports.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <Shield className="h-12 w-12 text-slate-500 mb-4" />
+                    <p className="text-slate-400">No reports found</p>
+                    <p className="text-sm text-slate-500 mt-1">The moderation queue is empty</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {reports.map((report: any) => (
+                      <div
+                        key={report.id}
+                        onClick={() => setSelectedReport(report.id)}
+                        className={`cursor-pointer rounded-lg border p-4 transition-colors ${
+                          selectedReport === report.id
+                            ? 'border-blue-500 bg-blue-500/10'
+                            : report.priority === 'high'
+                            ? 'border-red-500/30 bg-red-500/5 hover:bg-red-500/10'
+                            : 'border-slate-700 bg-slate-700/30 hover:bg-slate-700/50'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3">
+                            <div
+                              className={`rounded-full p-2 ${
+                                report.content_type === 'video'
+                                  ? 'bg-purple-500/10 text-purple-500'
+                                  : 'bg-blue-500/10 text-blue-500'
+                              }`}
+                            >
+                              {report.content_type === 'video' ? (
+                                <Video className="h-4 w-4" />
+                              ) : (
+                                <Flag className="h-4 w-4" />
+                              )}
                             </div>
-                            <p className="mt-1 text-sm text-slate-400 line-clamp-2">
-                              {report.description}
-                            </p>
-                            <div className="mt-2 flex items-center gap-4 text-xs text-slate-500">
-                              <span>
-                                <Flag className="mr-1 inline h-3 w-3" />
-                                {report.reportCount} reports
-                              </span>
-                              <span>
-                                <User className="mr-1 inline h-3 w-3" />
-                                {report.reportedBy}
-                              </span>
-                              <span>
-                                <Clock className="mr-1 inline h-3 w-3" />
-                                {new Date(report.createdAt).toLocaleDateString()}
-                              </span>
+                            <div className="flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h4 className="font-medium text-white">
+                                  {report.content_title || `Report #${report.id.slice(0, 8)}`}
+                                </h4>
+                                {report.report_type && getReportTypeBadge(report.report_type)}
+                                {report.priority && getPriorityBadge(report.priority)}
+                                {getStatusBadge(report.status)}
+                              </div>
+                              <p className="mt-1 text-sm text-slate-400 line-clamp-2">
+                                {report.description || 'No description provided'}
+                              </p>
+                              <div className="mt-2 flex items-center gap-4 text-xs text-slate-500">
+                                {report.report_count && (
+                                  <span>
+                                    <Flag className="mr-1 inline h-3 w-3" />
+                                    {report.report_count} reports
+                                  </span>
+                                )}
+                                {report.reported_by && (
+                                  <span>
+                                    <User className="mr-1 inline h-3 w-3" />
+                                    {report.reported_by}
+                                  </span>
+                                )}
+                                <span>
+                                  <Clock className="mr-1 inline h-3 w-3" />
+                                  {formatRelativeTime(report.created_at)}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -447,38 +338,46 @@ export function AdminModeration() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {(() => {
-                    const report = MOCK_REPORTS.find((r) => r.id === selectedReport);
+                    const report = reports.find((r: any) => r.id === selectedReport);
                     if (!report) return null;
                     return (
                       <>
                         <div className="aspect-video rounded-lg bg-slate-700" />
                         <div>
-                          <h3 className="font-semibold text-white">{report.contentTitle}</h3>
+                          <h3 className="font-semibold text-white">
+                            {report.content_title || `Report #${report.id.slice(0, 8)}`}
+                          </h3>
                           <div className="mt-2 flex flex-wrap gap-2">
-                            {getReportTypeBadge(report.reportType)}
-                            {getPriorityBadge(report.priority)}
+                            {report.report_type && getReportTypeBadge(report.report_type)}
+                            {report.priority && getPriorityBadge(report.priority)}
                           </div>
                         </div>
                         <div className="rounded-lg bg-slate-700/50 p-3">
-                          <p className="text-sm text-slate-300">{report.description}</p>
+                          <p className="text-sm text-slate-300">
+                            {report.description || 'No description provided'}
+                          </p>
                         </div>
                         <div className="space-y-2 text-sm">
+                          {report.content_owner && (
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Content Owner</span>
+                              <span className="text-white">{report.content_owner}</span>
+                            </div>
+                          )}
+                          {report.reported_by && (
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Reported By</span>
+                              <span className="text-white">{report.reported_by}</span>
+                            </div>
+                          )}
                           <div className="flex justify-between">
-                            <span className="text-slate-400">Content Owner</span>
-                            <span className="text-white">{report.contentOwner}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-400">Reported By</span>
-                            <span className="text-white">{report.reportedBy}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-400">Report Count</span>
-                            <span className="text-white">{report.reportCount}</span>
+                            <span className="text-slate-400">Status</span>
+                            <span className="text-white">{report.status}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-slate-400">Created</span>
                             <span className="text-white">
-                              {new Date(report.createdAt).toLocaleString()}
+                              {formatRelativeTime(report.created_at)}
                             </span>
                           </div>
                         </div>
@@ -495,11 +394,19 @@ export function AdminModeration() {
                             </Button>
                           </div>
                           <div className="mt-3 grid grid-cols-2 gap-2">
-                            <Button className="bg-red-600 hover:bg-red-700">
+                            <Button
+                              className="bg-red-600 hover:bg-red-700"
+                              onClick={() => handleModAction(report.id, 'remove')}
+                              disabled={updateStatus.isPending}
+                            >
                               <Ban className="mr-2 h-4 w-4" />
                               Remove
                             </Button>
-                            <Button className="bg-green-600 hover:bg-green-700">
+                            <Button
+                              className="bg-green-600 hover:bg-green-700"
+                              onClick={() => handleModAction(report.id, 'dismiss')}
+                              disabled={updateStatus.isPending}
+                            >
                               <CheckCircle className="mr-2 h-4 w-4" />
                               Dismiss
                             </Button>
@@ -507,6 +414,8 @@ export function AdminModeration() {
                           <Button
                             variant="outline"
                             className="mt-2 w-full border-yellow-600 text-yellow-400"
+                            onClick={() => handleModAction(report.id, 'warn')}
+                            disabled={updateStatus.isPending}
                           >
                             <AlertOctagon className="mr-2 h-4 w-4" />
                             Warn User
@@ -534,40 +443,10 @@ export function AdminModeration() {
             <CardTitle className="text-white">Pending Appeals</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {MOCK_APPEALS.map((appeal) => (
-                <div
-                  key={appeal.id}
-                  className="rounded-lg border border-slate-700 bg-slate-700/30 p-4"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="font-medium text-white">{appeal.contentTitle}</h4>
-                      <p className="mt-1 text-sm text-slate-400">{appeal.appealReason}</p>
-                      <div className="mt-2 flex items-center gap-4 text-xs text-slate-500">
-                        <span>Submitted by: {appeal.submittedBy}</span>
-                        <span>
-                          {new Date(appeal.submittedAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                    <Badge className="bg-yellow-500/10 text-yellow-400">Pending</Badge>
-                  </div>
-                  <div className="mt-4 flex gap-2">
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                      <ThumbsUp className="mr-1 h-4 w-4" />
-                      Approve
-                    </Button>
-                    <Button size="sm" className="bg-red-600 hover:bg-red-700">
-                      <ThumbsDown className="mr-1 h-4 w-4" />
-                      Deny
-                    </Button>
-                    <Button size="sm" variant="outline" className="border-slate-600">
-                      View Original Report
-                    </Button>
-                  </div>
-                </div>
-              ))}
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Scale className="h-12 w-12 text-slate-500 mb-4" />
+              <p className="text-slate-400">Appeals are loaded from the database</p>
+              <p className="text-sm text-slate-500 mt-1">No pending appeals at this time</p>
             </div>
           </CardContent>
         </Card>
