@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { VerificationBadge } from '@/components/verification';
 import { cn } from '@/lib/utils';
-import { Copy, Check, Code, Eye, Settings, Palette } from 'lucide-react';
+import { Copy, Check, Code, Eye, Settings, Palette, QrCode, Globe, Share2 } from 'lucide-react';
 
-type EmbedType = 'badge' | 'player' | 'certificate';
+type EmbedType = 'badge' | 'player' | 'certificate' | 'qrcode' | 'jsonld';
 type BadgeSize = 'sm' | 'md' | 'lg';
 type BadgeVariant = 'default' | 'minimal' | 'detailed';
 type Theme = 'light' | 'dark' | 'auto';
+type CodeFormat = 'html' | 'react' | 'wordpress' | 'markdown';
 
 interface EmbedOptions {
   type: EmbedType;
@@ -19,6 +20,7 @@ interface EmbedOptions {
   showLink: boolean;
   width?: string;
   height?: string;
+  codeFormat: CodeFormat;
 }
 
 interface EmbedGeneratorProps {
@@ -26,17 +28,23 @@ interface EmbedGeneratorProps {
   videoId: string;
   status: 'verified' | 'pending' | 'unverified';
   playbackId?: string;
+  videoTitle?: string;
+  verificationDate?: string;
+  transactionHash?: string;
   className?: string;
 }
 
 /**
- * EmbedGenerator - Generate embed codes for verification badges and players
+ * EmbedGenerator - Generate embed codes for verification badges, players, QR codes, and structured data
  */
 export function EmbedGenerator({
   tokenId,
   videoId: _videoId,
   status,
   playbackId,
+  videoTitle,
+  verificationDate,
+  transactionHash,
   className,
 }: EmbedGeneratorProps) {
   const [options, setOptions] = useState<EmbedOptions>({
@@ -47,18 +55,82 @@ export function EmbedGenerator({
     showLink: true,
     width: '100%',
     height: '400px',
+    codeFormat: 'html',
   });
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'code'>('preview');
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://vidchain.io';
 
+  // Generate QR code SVG (simple implementation using a placeholder API)
+  const qrCodeUrl = useMemo(() => {
+    const verifyUrl = `${baseUrl}/verify/${tokenId}`;
+    return `${baseUrl}/api/qr/${tokenId}?url=${encodeURIComponent(verifyUrl)}&size=200`;
+  }, [baseUrl, tokenId]);
+
+  // Generate JSON-LD structured data
+  const jsonLdData = useMemo(() => {
+    return JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'VideoObject',
+      name: videoTitle || `Verified Video #${tokenId}`,
+      identifier: tokenId,
+      additionalProperty: [
+        {
+          '@type': 'PropertyValue',
+          name: 'verificationStatus',
+          value: status,
+        },
+        {
+          '@type': 'PropertyValue',
+          name: 'blockchainNetwork',
+          value: 'Polygon',
+        },
+        ...(transactionHash ? [{
+          '@type': 'PropertyValue',
+          name: 'transactionHash',
+          value: transactionHash,
+        }] : []),
+        ...(verificationDate ? [{
+          '@type': 'PropertyValue',
+          name: 'verificationDate',
+          value: verificationDate,
+        }] : []),
+      ],
+      potentialAction: {
+        '@type': 'ViewAction',
+        name: 'Verify Authenticity',
+        target: `${baseUrl}/verify/${tokenId}`,
+      },
+    }, null, 2);
+  }, [tokenId, status, videoTitle, transactionHash, verificationDate, baseUrl]);
+
   // Generate embed code based on options
   const embedCode = useMemo(() => {
-    const { type, size, variant, theme, showLink, width, height } = options;
+    const { type, size, variant, theme, showLink, width, height, codeFormat } = options;
 
     if (type === 'badge') {
-      // JavaScript embed for badge
+      if (codeFormat === 'react') {
+        return `import { VerificationBadge } from '@vidchain/react';
+
+<VerificationBadge
+  tokenId={${tokenId}}
+  size="${size}"
+  variant="${variant}"
+  theme="${theme}"
+  showLink={${showLink}}
+/>`;
+      }
+
+      if (codeFormat === 'wordpress') {
+        return `[vidchain_badge token_id="${tokenId}" size="${size}" variant="${variant}" theme="${theme}"]`;
+      }
+
+      if (codeFormat === 'markdown') {
+        return `[![VidChain Verified](${baseUrl}/api/badge/${tokenId}.svg?variant=${variant}&size=${size})](${baseUrl}/verify/${tokenId})`;
+      }
+
+      // Default HTML embed
       return `<!-- VidChain Verification Badge -->
 <div id="vidchain-badge-${tokenId}"></div>
 <script>
@@ -82,7 +154,6 @@ export function EmbedGenerator({
     }
 
     if (type === 'player') {
-      // Iframe embed for player
       const params = new URLSearchParams({
         token: tokenId.toString(),
         theme,
@@ -105,7 +176,6 @@ export function EmbedGenerator({
     }
 
     if (type === 'certificate') {
-      // Iframe embed for certificate
       return `<!-- VidChain Verification Certificate -->
 <iframe
   src="${baseUrl}/embed/certificate/${tokenId}?theme=${theme}"
@@ -117,8 +187,27 @@ export function EmbedGenerator({
 ></iframe>`;
     }
 
+    if (type === 'qrcode') {
+      return `<!-- VidChain QR Code -->
+<a href="${baseUrl}/verify/${tokenId}" target="_blank" rel="noopener noreferrer">
+  <img
+    src="${qrCodeUrl}"
+    alt="Scan to verify - VidChain Token #${tokenId}"
+    width="200"
+    height="200"
+  />
+</a>`;
+    }
+
+    if (type === 'jsonld') {
+      return `<!-- VidChain Structured Data (JSON-LD) - Add to <head> -->
+<script type="application/ld+json">
+${jsonLdData}
+</script>`;
+    }
+
     return '';
-  }, [options, tokenId, playbackId, baseUrl]);
+  }, [options, tokenId, playbackId, baseUrl, qrCodeUrl, jsonLdData]);
 
   // Generate HTML snippet for simple integration
   const htmlSnippet = useMemo(() => {
@@ -127,15 +216,15 @@ export function EmbedGenerator({
    target="_blank"
    rel="noopener noreferrer"
    class="vidchain-badge vidchain-badge--${options.variant} vidchain-badge--${options.size}">
-  <img src="${baseUrl}/api/badge/${tokenId}?variant=${options.variant}&size=${options.size}"
+  <img src="${baseUrl}/api/badge/${tokenId}.svg?variant=${options.variant}&size=${options.size}"
        alt="VidChain Verified" />
 </a>`;
     }
     return embedCode;
   }, [options, tokenId, embedCode, baseUrl]);
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(embedCode);
+  const copyToClipboard = (text?: string) => {
+    navigator.clipboard.writeText(text || embedCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -146,9 +235,18 @@ export function EmbedGenerator({
   ] as const;
 
   const embedTypes = [
-    { id: 'badge', label: 'Badge', description: 'Compact verification indicator' },
-    { id: 'player', label: 'Player', description: 'Video player with verification' },
-    { id: 'certificate', label: 'Certificate', description: 'Full verification certificate' },
+    { id: 'badge', label: 'Badge', description: 'Compact verification indicator', icon: Share2 },
+    { id: 'player', label: 'Player', description: 'Video player with verification', icon: Eye },
+    { id: 'certificate', label: 'Certificate', description: 'Full verification certificate', icon: Globe },
+    { id: 'qrcode', label: 'QR Code', description: 'Scannable verification link', icon: QrCode },
+    { id: 'jsonld', label: 'SEO Data', description: 'JSON-LD structured data', icon: Code },
+  ] as const;
+
+  const codeFormats = [
+    { id: 'html', label: 'HTML' },
+    { id: 'react', label: 'React' },
+    { id: 'wordpress', label: 'WordPress' },
+    { id: 'markdown', label: 'Markdown' },
   ] as const;
 
   return (
@@ -159,24 +257,28 @@ export function EmbedGenerator({
           <CardTitle>Embed Type</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {embedTypes.map((type) => (
-              <button
-                key={type.id}
-                onClick={() => setOptions((o) => ({ ...o, type: type.id }))}
-                className={cn(
-                  'rounded-lg border p-4 text-left transition-all',
-                  options.type === type.id
-                    ? 'border-primary bg-primary/5 ring-2 ring-primary'
-                    : 'border-border hover:border-primary/50'
-                )}
-              >
-                <h4 className="font-medium">{type.label}</h4>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {type.description}
-                </p>
-              </button>
-            ))}
+          <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            {embedTypes.map((type) => {
+              const Icon = type.icon;
+              return (
+                <button
+                  key={type.id}
+                  onClick={() => setOptions((o) => ({ ...o, type: type.id }))}
+                  className={cn(
+                    'rounded-lg border p-4 text-left transition-all',
+                    options.type === type.id
+                      ? 'border-primary bg-primary/5 ring-2 ring-primary'
+                      : 'border-border hover:border-primary/50'
+                  )}
+                >
+                  <Icon className="h-5 w-5 mb-2 text-muted-foreground" />
+                  <h4 className="font-medium">{type.label}</h4>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {type.description}
+                  </p>
+                </button>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -191,6 +293,29 @@ export function EmbedGenerator({
         </CardHeader>
         <CardContent>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Code Format (for badges) */}
+            {options.type === 'badge' && (
+              <div>
+                <label className="text-sm font-medium">Format</label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {codeFormats.map((format) => (
+                    <button
+                      key={format.id}
+                      onClick={() => setOptions((o) => ({ ...o, codeFormat: format.id }))}
+                      className={cn(
+                        'rounded-md border px-3 py-1.5 text-sm',
+                        options.codeFormat === format.id
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-border hover:border-primary'
+                      )}
+                    >
+                      {format.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Size (for badges) */}
             {options.type === 'badge' && (
               <div>
@@ -333,7 +458,7 @@ export function EmbedGenerator({
               })}
             </div>
             <Button
-              onClick={copyToClipboard}
+              onClick={() => copyToClipboard()}
               variant="outline"
               size="sm"
               className="gap-2"
@@ -357,6 +482,7 @@ export function EmbedGenerator({
               )}
               {options.type === 'player' && (
                 <div className="text-center text-muted-foreground">
+                  <Eye className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>Player embed preview</p>
                   <p className="mt-2 text-sm">
                     {options.width} x {options.height}
@@ -365,8 +491,35 @@ export function EmbedGenerator({
               )}
               {options.type === 'certificate' && (
                 <div className="text-center text-muted-foreground">
+                  <Globe className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>Certificate embed preview</p>
                   <p className="mt-2 text-sm">Token #{tokenId}</p>
+                </div>
+              )}
+              {options.type === 'qrcode' && (
+                <div className="text-center">
+                  <div className="mx-auto mb-4 flex h-48 w-48 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-white p-4">
+                    <QrCode className="h-24 w-24 text-gray-800" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    QR code links to verification page
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground/70">
+                    {baseUrl}/verify/{tokenId}
+                  </p>
+                </div>
+              )}
+              {options.type === 'jsonld' && (
+                <div className="w-full text-left">
+                  <p className="text-sm font-medium text-muted-foreground mb-3">
+                    JSON-LD Structured Data Preview
+                  </p>
+                  <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-xs text-gray-100">
+                    <code>{jsonLdData}</code>
+                  </pre>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Add this to your page's &lt;head&gt; to enable rich search results
+                  </p>
                 </div>
               )}
             </div>
@@ -385,12 +538,53 @@ export function EmbedGenerator({
       {options.type === 'badge' && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Simple HTML (No JavaScript)</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm">Simple HTML (No JavaScript)</CardTitle>
+              <Button
+                onClick={() => copyToClipboard(htmlSnippet)}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <Copy className="h-3 w-3" />
+                Copy
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-xs text-gray-100">
               <code>{htmlSnippet}</code>
             </pre>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* SVG Badge URL */}
+      {options.type === 'badge' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Direct Badge URL (SVG)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-2">
+              <Input
+                readOnly
+                value={`${baseUrl}/api/badge/${tokenId}.svg?variant=${options.variant}&size=${options.size}&theme=${options.theme}`}
+                className="font-mono text-xs"
+              />
+              <Button
+                onClick={() => copyToClipboard(
+                  `${baseUrl}/api/badge/${tokenId}.svg?variant=${options.variant}&size=${options.size}&theme=${options.theme}`
+                )}
+                variant="outline"
+                size="sm"
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Use this URL directly in any context that supports images (emails, social media, etc.)
+            </p>
           </CardContent>
         </Card>
       )}

@@ -8,6 +8,7 @@ import { NativeSelect } from '@/components/ui/Select';
 import { VisuallyHidden } from '@/components/ui/Accessibility';
 import { ROUTES } from '@/config/constants';
 import { formatRelativeTime } from '@/lib/utils';
+import { useAdminUsers } from '@/hooks/useAdminData';
 import {
   Search,
   MoreVertical,
@@ -17,105 +18,13 @@ import {
   CheckCircle,
   Mail,
   Wallet,
-  Video,
-  ShoppingBag,
   Eye,
   Edit,
   Trash2,
   Download,
   UserPlus,
-  AlertTriangle,
+  Loader2,
 } from 'lucide-react';
-
-// Mock users data
-const MOCK_USERS = [
-  {
-    id: '1',
-    email: 'john.doe@example.com',
-    fullName: 'John Doe',
-    walletAddress: '0x1234...5678',
-    role: 'user',
-    status: 'active',
-    verified: true,
-    createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
-    lastActive: new Date(Date.now() - 3600000).toISOString(),
-    stats: {
-      videos: 45,
-      nfts: 12,
-      sales: 8,
-      volume: '2.5',
-    },
-  },
-  {
-    id: '2',
-    email: 'nasa.archives@nasa.gov',
-    fullName: 'NASA Archives',
-    walletAddress: '0x2345...6789',
-    role: 'organization_admin',
-    status: 'active',
-    verified: true,
-    createdAt: new Date(Date.now() - 86400000 * 90).toISOString(),
-    lastActive: new Date(Date.now() - 7200000).toISOString(),
-    stats: {
-      videos: 234,
-      nfts: 156,
-      sales: 89,
-      volume: '45.6',
-    },
-  },
-  {
-    id: '3',
-    email: 'suspicious@fake.com',
-    fullName: 'Suspicious User',
-    walletAddress: '0x3456...7890',
-    role: 'user',
-    status: 'suspended',
-    verified: false,
-    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-    lastActive: new Date(Date.now() - 86400000 * 2).toISOString(),
-    stats: {
-      videos: 3,
-      nfts: 0,
-      sales: 0,
-      volume: '0',
-    },
-    suspendReason: 'Suspected fraudulent activity',
-  },
-  {
-    id: '4',
-    email: 'creator@independent.com',
-    fullName: 'Independent Creator',
-    walletAddress: '0x4567...8901',
-    role: 'user',
-    status: 'active',
-    verified: false,
-    createdAt: new Date(Date.now() - 86400000 * 14).toISOString(),
-    lastActive: new Date(Date.now() - 1800000).toISOString(),
-    stats: {
-      videos: 28,
-      nfts: 15,
-      sales: 12,
-      volume: '8.2',
-    },
-  },
-  {
-    id: '5',
-    email: 'admin@vidchain.io',
-    fullName: 'Platform Admin',
-    walletAddress: '0x5678...9012',
-    role: 'admin',
-    status: 'active',
-    verified: true,
-    createdAt: new Date(Date.now() - 86400000 * 365).toISOString(),
-    lastActive: new Date(Date.now() - 300000).toISOString(),
-    stats: {
-      videos: 0,
-      nfts: 0,
-      sales: 0,
-      volume: '0',
-    },
-  },
-];
 
 type UserRole = 'all' | 'user' | 'organization_admin' | 'admin';
 type UserStatus = 'all' | 'active' | 'suspended' | 'pending';
@@ -134,24 +43,37 @@ const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },
 ];
 
+interface AdminUser {
+  id: string;
+  email: string;
+  full_name?: string;
+  wallet_address?: string;
+  role: string;
+  status?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
 export function AdminUsers() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<UserRole>('all');
   const [statusFilter, setStatusFilter] = useState<UserStatus>('all');
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
-  const filteredUsers = MOCK_USERS.filter((user) => {
-    const matchesSearch =
-      user.email.toLowerCase().includes(search.toLowerCase()) ||
-      user.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      user.walletAddress.toLowerCase().includes(search.toLowerCase());
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-    return matchesSearch && matchesRole && matchesStatus;
+  const { data, isLoading } = useAdminUsers({
+    search,
+    roleFilter: roleFilter === 'all' ? undefined : roleFilter,
+    statusFilter: statusFilter === 'all' ? undefined : statusFilter,
+    page,
+    perPage: 20,
   });
+
+  const users = (data?.users ?? []) as AdminUser[];
+  const totalUsers = data?.total ?? 0;
 
   const toggleSelectUser = (userId: string) => {
     setSelectedUsers((prev) =>
@@ -162,10 +84,10 @@ export function AdminUsers() {
   };
 
   const toggleSelectAll = () => {
-    if (selectedUsers.length === filteredUsers.length) {
+    if (selectedUsers.length === users.length) {
       setSelectedUsers([]);
     } else {
-      setSelectedUsers(filteredUsers.map((u) => u.id));
+      setSelectedUsers(users.map((u) => u.id));
     }
   };
 
@@ -224,9 +146,13 @@ export function AdminUsers() {
     }
   }, [menuOpen]);
 
-  const renderUserMenu = (user: typeof MOCK_USERS[0], isMobile: boolean = false) => {
+  const getUserStatus = (user: AdminUser) => user.status || 'active';
+
+  const renderUserMenu = (user: AdminUser, isMobile: boolean = false) => {
     const menuId = `user-menu-${user.id}`;
     const buttonId = `user-menu-button-${user.id}`;
+    const displayName = user.full_name || user.email;
+    const userStatus = getUserStatus(user);
 
     return (
       <div className="relative">
@@ -237,7 +163,7 @@ export function AdminUsers() {
           className={`rounded p-2 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
             isMobile ? 'min-h-[44px] min-w-[44px] flex items-center justify-center' : ''
           }`}
-          aria-label={`Actions for ${user.fullName}`}
+          aria-label={`Actions for ${displayName}`}
           aria-expanded={menuOpen === user.id}
           aria-haspopup="menu"
           aria-controls={menuOpen === user.id ? menuId : undefined}
@@ -284,7 +210,7 @@ export function AdminUsers() {
                 <Mail className="h-4 w-4" aria-hidden="true" />
                 Send Email
               </button>
-              {user.status === 'active' ? (
+              {userStatus === 'active' ? (
                 <button
                   role="menuitem"
                   className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-yellow-400 hover:bg-slate-700 focus:bg-slate-700 focus:outline-none"
@@ -315,6 +241,9 @@ export function AdminUsers() {
     );
   };
 
+  const activeCount = users.filter((u) => getUserStatus(u) === 'active').length;
+  const suspendedCount = users.filter((u) => getUserStatus(u) === 'suspended').length;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -322,7 +251,7 @@ export function AdminUsers() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white">User Management</h1>
           <p className="text-slate-400">
-            {MOCK_USERS.length} total users
+            {isLoading ? 'Loading...' : `${totalUsers} total users`}
           </p>
         </div>
         <div className="flex gap-2">
@@ -346,7 +275,9 @@ export function AdminUsers() {
             <div className="flex items-center gap-3">
               <User className="h-8 w-8 text-blue-500" aria-hidden="true" />
               <div>
-                <p className="text-2xl font-bold text-white">{MOCK_USERS.length}</p>
+                <p className="text-2xl font-bold text-white">
+                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : totalUsers}
+                </p>
                 <p className="text-sm text-slate-400">Total Users</p>
               </div>
             </div>
@@ -358,7 +289,7 @@ export function AdminUsers() {
               <CheckCircle className="h-8 w-8 text-green-500" aria-hidden="true" />
               <div>
                 <p className="text-2xl font-bold text-white">
-                  {MOCK_USERS.filter((u) => u.status === 'active').length}
+                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : activeCount}
                 </p>
                 <p className="text-sm text-slate-400">Active</p>
               </div>
@@ -371,7 +302,7 @@ export function AdminUsers() {
               <Ban className="h-8 w-8 text-red-500" aria-hidden="true" />
               <div>
                 <p className="text-2xl font-bold text-white">
-                  {MOCK_USERS.filter((u) => u.status === 'suspended').length}
+                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : suspendedCount}
                 </p>
                 <p className="text-sm text-slate-400">Suspended</p>
               </div>
@@ -384,9 +315,9 @@ export function AdminUsers() {
               <Shield className="h-8 w-8 text-purple-500" aria-hidden="true" />
               <div>
                 <p className="text-2xl font-bold text-white">
-                  {MOCK_USERS.filter((u) => u.verified).length}
+                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : totalUsers}
                 </p>
-                <p className="text-sm text-slate-400">Verified</p>
+                <p className="text-sm text-slate-400">Registered</p>
               </div>
             </div>
           </CardContent>
@@ -409,7 +340,7 @@ export function AdminUsers() {
                 id="user-search"
                 placeholder="Search by email, name, or wallet..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 className="pl-9 bg-slate-900 border-slate-700 text-white"
                 aria-label="Search users by email, name, or wallet address"
               />
@@ -424,7 +355,7 @@ export function AdminUsers() {
                   id="role-filter"
                   aria-label="Filter by role"
                   value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value as UserRole)}
+                  onChange={(e) => { setRoleFilter(e.target.value as UserRole); setPage(1); }}
                   options={ROLE_OPTIONS}
                   className="border-slate-700 bg-slate-900 text-white"
                 />
@@ -438,7 +369,7 @@ export function AdminUsers() {
                   id="status-filter"
                   aria-label="Filter by status"
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as UserStatus)}
+                  onChange={(e) => { setStatusFilter(e.target.value as UserStatus); setPage(1); }}
                   options={STATUS_OPTIONS}
                   className="border-slate-700 bg-slate-900 text-white"
                 />
@@ -474,83 +405,184 @@ export function AdminUsers() {
         </CardContent>
       </Card>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && users.length === 0 && (
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <User className="h-12 w-12 text-slate-500 mb-4" />
+            <p className="text-slate-400">No users found</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Users Table - Desktop */}
-      <Card className="hidden md:block bg-slate-800/50 border-slate-700">
-        <CardContent className="p-0">
-          <table
-            className="w-full"
-            role="table"
-            aria-label="Users table"
-          >
-            <caption className="sr-only">
-              List of users with their details, roles, status, and statistics.
-              Use checkboxes to select users for bulk actions.
-            </caption>
-            <thead>
-              <tr className="border-b border-slate-700">
-                <th scope="col" className="p-4 text-left">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
-                      onChange={toggleSelectAll}
-                      className="rounded border-slate-600"
-                      aria-label={selectedUsers.length === filteredUsers.length ? 'Deselect all users' : 'Select all users'}
-                    />
-                    <span className="sr-only">Select all</span>
-                  </label>
-                </th>
-                <th scope="col" className="p-4 text-left text-sm font-medium text-slate-400">User</th>
-                <th scope="col" className="p-4 text-left text-sm font-medium text-slate-400">Role</th>
-                <th scope="col" className="p-4 text-left text-sm font-medium text-slate-400">Status</th>
-                <th scope="col" className="p-4 text-left text-sm font-medium text-slate-400">Stats</th>
-                <th scope="col" className="p-4 text-left text-sm font-medium text-slate-400">Joined</th>
-                <th scope="col" className="p-4 text-left text-sm font-medium text-slate-400">
-                  <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map((user) => (
-                <tr key={user.id} className="border-b border-slate-700/50 hover:bg-slate-800/50">
-                  <td className="p-4">
+      {!isLoading && users.length > 0 && (
+        <Card className="hidden md:block bg-slate-800/50 border-slate-700">
+          <CardContent className="p-0">
+            <table
+              className="w-full"
+              role="table"
+              aria-label="Users table"
+            >
+              <caption className="sr-only">
+                List of users with their details, roles, status, and statistics.
+                Use checkboxes to select users for bulk actions.
+              </caption>
+              <thead>
+                <tr className="border-b border-slate-700">
+                  <th scope="col" className="p-4 text-left">
                     <label className="flex items-center">
                       <input
                         type="checkbox"
-                        checked={selectedUsers.includes(user.id)}
-                        onChange={() => toggleSelectUser(user.id)}
+                        checked={selectedUsers.length === users.length && users.length > 0}
+                        onChange={toggleSelectAll}
                         className="rounded border-slate-600"
-                        aria-label={`Select ${user.fullName}`}
+                        aria-label={selectedUsers.length === users.length ? 'Deselect all users' : 'Select all users'}
                       />
+                      <span className="sr-only">Select all</span>
                     </label>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-700">
-                        <User className="h-5 w-5 text-slate-400" aria-hidden="true" />
-                      </div>
-                      <div>
+                  </th>
+                  <th scope="col" className="p-4 text-left text-sm font-medium text-slate-400">User</th>
+                  <th scope="col" className="p-4 text-left text-sm font-medium text-slate-400">Role</th>
+                  <th scope="col" className="p-4 text-left text-sm font-medium text-slate-400">Status</th>
+                  <th scope="col" className="p-4 text-left text-sm font-medium text-slate-400">Joined</th>
+                  <th scope="col" className="p-4 text-left text-sm font-medium text-slate-400">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((user) => {
+                  const displayName = user.full_name || user.email;
+                  const userStatus = getUserStatus(user);
+
+                  return (
+                    <tr key={user.id} className="border-b border-slate-700/50 hover:bg-slate-800/50">
+                      <td className="p-4">
+                        <label className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedUsers.includes(user.id)}
+                            onChange={() => toggleSelectUser(user.id)}
+                            className="rounded border-slate-600"
+                            aria-label={`Select ${displayName}`}
+                          />
+                        </label>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-700">
+                            <User className="h-5 w-5 text-slate-400" aria-hidden="true" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-white">{displayName}</span>
+                            </div>
+                            <p className="text-sm text-slate-500">{user.email}</p>
+                            {user.wallet_address && (
+                              <p className="flex items-center gap-1 text-xs text-slate-600">
+                                <Wallet className="h-3 w-3" aria-hidden="true" />
+                                <span className="sr-only">Wallet address: </span>
+                                {user.wallet_address.slice(0, 6)}...{user.wallet_address.slice(-4)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <Badge
+                          variant={
+                            user.role === 'admin'
+                              ? 'destructive'
+                              : user.role === 'organization_admin'
+                              ? 'default'
+                              : 'secondary'
+                          }
+                        >
+                          {user.role === 'organization_admin' ? 'Org Admin' : user.role}
+                        </Badge>
+                      </td>
+                      <td className="p-4">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-white">{user.fullName}</span>
-                          {user.verified && (
-                            <>
-                              <CheckCircle className="h-4 w-4 text-blue-500" aria-hidden="true" />
-                              <span className="sr-only">(Verified)</span>
-                            </>
+                          {userStatus === 'active' ? (
+                            <Badge className="bg-green-500/10 text-green-400">
+                              <CheckCircle className="mr-1 h-3 w-3" aria-hidden="true" />
+                              Active
+                            </Badge>
+                          ) : userStatus === 'suspended' ? (
+                            <Badge className="bg-red-500/10 text-red-400">
+                              <Ban className="mr-1 h-3 w-3" aria-hidden="true" />
+                              Suspended
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-yellow-500/10 text-yellow-400">
+                              Pending
+                            </Badge>
                           )}
                         </div>
-                        <p className="text-sm text-slate-500">{user.email}</p>
-                        {user.walletAddress && (
-                          <p className="flex items-center gap-1 text-xs text-slate-600">
-                            <Wallet className="h-3 w-3" aria-hidden="true" />
-                            <span className="sr-only">Wallet address: </span>
-                            {user.walletAddress}
+                      </td>
+                      <td className="p-4">
+                        <div className="text-sm">
+                          <p className="text-slate-300">
+                            <span className="sr-only">Joined: </span>
+                            {formatRelativeTime(user.created_at)}
                           </p>
-                        )}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        {renderUserMenu(user)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Users Cards - Mobile */}
+      {!isLoading && users.length > 0 && (
+        <div className="md:hidden space-y-4" role="list" aria-label="Users list">
+          {users.map((user) => {
+            const displayName = user.full_name || user.email;
+            const userStatus = getUserStatus(user);
+
+            return (
+              <Card key={user.id} className="bg-slate-800/50 border-slate-700" role="listitem">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <label className="flex items-center flex-shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.includes(user.id)}
+                          onChange={() => toggleSelectUser(user.id)}
+                          className="rounded border-slate-600"
+                          aria-label={`Select ${displayName}`}
+                        />
+                      </label>
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-700">
+                        <User className="h-5 w-5 text-slate-400" aria-hidden="true" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-white truncate">{displayName}</span>
+                        </div>
+                        <p className="text-sm text-slate-500 truncate">{user.email}</p>
                       </div>
                     </div>
-                  </td>
-                  <td className="p-4">
+                    {renderUserMenu(user, true)}
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
                     <Badge
                       variant={
                         user.role === 'admin'
@@ -562,173 +594,77 @@ export function AdminUsers() {
                     >
                       {user.role === 'organization_admin' ? 'Org Admin' : user.role}
                     </Badge>
-                  </td>
-                  <td className="p-4">
-                    <div className="flex items-center gap-2">
-                      {user.status === 'active' ? (
-                        <Badge className="bg-green-500/10 text-green-400">
-                          <CheckCircle className="mr-1 h-3 w-3" aria-hidden="true" />
-                          Active
-                        </Badge>
-                      ) : user.status === 'suspended' ? (
-                        <Badge className="bg-red-500/10 text-red-400">
-                          <Ban className="mr-1 h-3 w-3" aria-hidden="true" />
-                          Suspended
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-yellow-500/10 text-yellow-400">
-                          Pending
-                        </Badge>
-                      )}
-                    </div>
-                    {user.suspendReason && (
-                      <p className="mt-1 flex items-center gap-1 text-xs text-red-400">
-                        <AlertTriangle className="h-3 w-3" aria-hidden="true" />
-                        <span className="sr-only">Suspension reason: </span>
-                        {user.suspendReason}
-                      </p>
+                    {userStatus === 'active' ? (
+                      <Badge className="bg-green-500/10 text-green-400">
+                        <CheckCircle className="mr-1 h-3 w-3" aria-hidden="true" />
+                        Active
+                      </Badge>
+                    ) : userStatus === 'suspended' ? (
+                      <Badge className="bg-red-500/10 text-red-400">
+                        <Ban className="mr-1 h-3 w-3" aria-hidden="true" />
+                        Suspended
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-yellow-500/10 text-yellow-400">
+                        Pending
+                      </Badge>
                     )}
-                  </td>
-                  <td className="p-4">
-                    <div className="space-y-1 text-sm">
-                      <div className="flex items-center gap-2 text-slate-400">
-                        <Video className="h-3 w-3" aria-hidden="true" />
-                        <span>{user.stats.videos} videos</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-slate-400">
-                        <ShoppingBag className="h-3 w-3" aria-hidden="true" />
-                        <span>{user.stats.sales} sales ({user.stats.volume} ETH)</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    <div className="text-sm">
-                      <p className="text-slate-300">
-                        <span className="sr-only">Joined: </span>
-                        {formatRelativeTime(user.createdAt)}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        <span className="sr-only">Last active: </span>
-                        Last: {formatRelativeTime(user.lastActive)}
-                      </p>
-                    </div>
-                  </td>
-                  <td className="p-4">
-                    {renderUserMenu(user)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
-
-      {/* Users Cards - Mobile */}
-      <div className="md:hidden space-y-4" role="list" aria-label="Users list">
-        {filteredUsers.map((user) => (
-          <Card key={user.id} className="bg-slate-800/50 border-slate-700" role="listitem">
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <label className="flex items-center flex-shrink-0">
-                    <input
-                      type="checkbox"
-                      checked={selectedUsers.includes(user.id)}
-                      onChange={() => toggleSelectUser(user.id)}
-                      className="rounded border-slate-600"
-                      aria-label={`Select ${user.fullName}`}
-                    />
-                  </label>
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-700">
-                    <User className="h-5 w-5 text-slate-400" aria-hidden="true" />
                   </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-white truncate">{user.fullName}</span>
-                      {user.verified && (
-                        <>
-                          <CheckCircle className="h-4 w-4 text-blue-500 flex-shrink-0" aria-hidden="true" />
-                          <span className="sr-only">(Verified)</span>
-                        </>
-                      )}
+
+                  <dl className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <dt className="text-slate-500">Joined</dt>
+                      <dd className="text-slate-300">{formatRelativeTime(user.created_at)}</dd>
                     </div>
-                    <p className="text-sm text-slate-500 truncate">{user.email}</p>
-                  </div>
-                </div>
-                {renderUserMenu(user, true)}
-              </div>
+                    <div>
+                      <dt className="text-slate-500">Role</dt>
+                      <dd className="text-slate-300">{user.role}</dd>
+                    </div>
+                  </dl>
 
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <Badge
-                  variant={
-                    user.role === 'admin'
-                      ? 'destructive'
-                      : user.role === 'organization_admin'
-                      ? 'default'
-                      : 'secondary'
-                  }
-                >
-                  {user.role === 'organization_admin' ? 'Org Admin' : user.role}
-                </Badge>
-                {user.status === 'active' ? (
-                  <Badge className="bg-green-500/10 text-green-400">
-                    <CheckCircle className="mr-1 h-3 w-3" aria-hidden="true" />
-                    Active
-                  </Badge>
-                ) : user.status === 'suspended' ? (
-                  <Badge className="bg-red-500/10 text-red-400">
-                    <Ban className="mr-1 h-3 w-3" aria-hidden="true" />
-                    Suspended
-                  </Badge>
-                ) : (
-                  <Badge className="bg-yellow-500/10 text-yellow-400">
-                    Pending
-                  </Badge>
-                )}
-              </div>
+                  {user.wallet_address && (
+                    <div className="mt-3 flex items-center gap-1 text-xs text-slate-600">
+                      <Wallet className="h-3 w-3" aria-hidden="true" />
+                      <span className="sr-only">Wallet address: </span>
+                      {user.wallet_address.slice(0, 6)}...{user.wallet_address.slice(-4)}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
-              {user.suspendReason && (
-                <p className="mt-2 flex items-center gap-1 text-xs text-red-400">
-                  <AlertTriangle className="h-3 w-3" aria-hidden="true" />
-                  <span className="sr-only">Suspension reason: </span>
-                  {user.suspendReason}
-                </p>
-              )}
-
-              <dl className="mt-4 grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <dt className="text-slate-500">Videos</dt>
-                  <dd className="text-white font-medium flex items-center gap-1">
-                    <Video className="h-3 w-3" aria-hidden="true" /> {user.stats.videos}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-slate-500">Sales</dt>
-                  <dd className="text-white font-medium flex items-center gap-1">
-                    <ShoppingBag className="h-3 w-3" aria-hidden="true" /> {user.stats.sales} ({user.stats.volume} ETH)
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-slate-500">Joined</dt>
-                  <dd className="text-slate-300">{formatRelativeTime(user.createdAt)}</dd>
-                </div>
-                <div>
-                  <dt className="text-slate-500">Last active</dt>
-                  <dd className="text-slate-300">{formatRelativeTime(user.lastActive)}</dd>
-                </div>
-              </dl>
-
-              {user.walletAddress && (
-                <div className="mt-3 flex items-center gap-1 text-xs text-slate-600">
-                  <Wallet className="h-3 w-3" aria-hidden="true" />
-                  <span className="sr-only">Wallet address: </span>
-                  {user.walletAddress}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* Pagination */}
+      {!isLoading && totalUsers > 20 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-slate-400">
+            Showing {users.length} of {totalUsers} users
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-slate-600"
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-slate-400">Page {page}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-slate-600"
+              disabled={page * 20 >= totalUsers}
+              onClick={() => setPage(page + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

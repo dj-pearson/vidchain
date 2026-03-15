@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { useAdminContent, useAdminStats } from '@/hooks/useAdminData';
+import { formatFileSize, formatRelativeTime } from '@/lib/utils';
 import {
   Video,
   Search,
-  MoreVertical,
   CheckCircle,
   XCircle,
   Clock,
@@ -13,141 +14,29 @@ import {
   Download,
   Trash2,
   Shield,
-  AlertTriangle,
-  Link,
-  Hash,
   Calendar,
-  User,
   HardDrive,
   Play,
+  Loader2,
+  MoreVertical,
 } from 'lucide-react';
-
-// Mock content data
-const MOCK_CONTENT_STATS = {
-  totalVideos: 45678,
-  totalStorage: '12.5 TB',
-  pendingVerification: 23,
-  verified: 44890,
-  failed: 12,
-  processingQueue: 8,
-};
-
-const MOCK_CONTENT = [
-  {
-    id: '1',
-    title: 'Historic Moon Landing - Apollo 11',
-    type: 'video',
-    owner: 'NASA Archives',
-    ownerAddress: '0x1234...5678',
-    ownerVerified: true,
-    status: 'verified',
-    hash: 'QmXyz123...',
-    ipfsCid: 'bafybeib...xyz',
-    size: '256 MB',
-    duration: '12:45',
-    views: 125000,
-    createdAt: '2024-01-10',
-    verifiedAt: '2024-01-10',
-    thumbnail: '/api/placeholder/160/90',
-    isNFT: true,
-    nftTokenId: '1234',
-  },
-  {
-    id: '2',
-    title: 'Breaking News Coverage 2024',
-    type: 'video',
-    owner: 'CNN Digital',
-    ownerAddress: '0x2345...6789',
-    ownerVerified: true,
-    status: 'pending',
-    hash: 'QmAbc456...',
-    ipfsCid: null,
-    size: '512 MB',
-    duration: '25:30',
-    views: 0,
-    createdAt: '2024-01-15',
-    verifiedAt: null,
-    thumbnail: '/api/placeholder/160/90',
-    isNFT: false,
-    nftTokenId: null,
-  },
-  {
-    id: '3',
-    title: 'Wildlife Documentary Clip',
-    type: 'video',
-    owner: 'NatGeo',
-    ownerAddress: '0x3456...7890',
-    ownerVerified: true,
-    status: 'processing',
-    hash: null,
-    ipfsCid: null,
-    size: '1.2 GB',
-    duration: '45:00',
-    views: 0,
-    createdAt: '2024-01-15',
-    verifiedAt: null,
-    thumbnail: '/api/placeholder/160/90',
-    isNFT: false,
-    nftTokenId: null,
-  },
-  {
-    id: '4',
-    title: 'Sports Highlights 2024',
-    type: 'video',
-    owner: 'ESPN Digital',
-    ownerAddress: '0x4567...8901',
-    ownerVerified: true,
-    status: 'verified',
-    hash: 'QmDef789...',
-    ipfsCid: 'bafybeic...abc',
-    size: '128 MB',
-    duration: '8:20',
-    views: 89000,
-    createdAt: '2024-01-08',
-    verifiedAt: '2024-01-08',
-    thumbnail: '/api/placeholder/160/90',
-    isNFT: true,
-    nftTokenId: '1567',
-  },
-  {
-    id: '5',
-    title: 'Suspicious Upload',
-    type: 'video',
-    owner: 'anonymous_user',
-    ownerAddress: '0x5678...9012',
-    ownerVerified: false,
-    status: 'failed',
-    hash: null,
-    ipfsCid: null,
-    size: '50 MB',
-    duration: '2:15',
-    views: 0,
-    createdAt: '2024-01-14',
-    verifiedAt: null,
-    thumbnail: '/api/placeholder/160/90',
-    isNFT: false,
-    nftTokenId: null,
-    failReason: 'Hash verification failed - possible duplicate',
-  },
-];
 
 export function AdminContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [nftFilter, setNftFilter] = useState<string>('all');
+  const [page, setPage] = useState(1);
   const [selectedContent, setSelectedContent] = useState<string[]>([]);
 
-  const filteredContent = MOCK_CONTENT.filter((content) => {
-    const matchesSearch =
-      content.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      content.owner.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || content.status === statusFilter;
-    const matchesNft =
-      nftFilter === 'all' ||
-      (nftFilter === 'nft' && content.isNFT) ||
-      (nftFilter === 'non-nft' && !content.isNFT);
-    return matchesSearch && matchesStatus && matchesNft;
+  const { data: stats, isLoading: statsLoading } = useAdminStats();
+  const { data: contentData, isLoading: contentLoading } = useAdminContent({
+    search: searchQuery,
+    statusFilter: statusFilter === 'all' ? undefined : statusFilter,
+    page,
+    perPage: 20,
   });
+
+  const content = contentData?.content ?? [];
+  const totalContent = contentData?.total ?? 0;
 
   const toggleContentSelection = (id: string) => {
     setSelectedContent((prev) =>
@@ -157,11 +46,12 @@ export function AdminContent() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case 'ready':
       case 'verified':
         return (
           <Badge className="bg-green-500/10 text-green-400">
             <CheckCircle className="mr-1 h-3 w-3" />
-            Verified
+            {status === 'ready' ? 'Ready' : 'Verified'}
           </Badge>
         );
       case 'pending':
@@ -172,6 +62,7 @@ export function AdminContent() {
           </Badge>
         );
       case 'processing':
+      case 'uploading':
         return (
           <Badge className="bg-blue-500/10 text-blue-400">
             <Clock className="mr-1 h-3 w-3 animate-spin" />
@@ -219,7 +110,7 @@ export function AdminContent() {
               <div>
                 <p className="text-xs text-slate-400">Total Videos</p>
                 <p className="text-xl font-bold text-white">
-                  {MOCK_CONTENT_STATS.totalVideos.toLocaleString()}
+                  {statsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (stats?.totalVideos ?? 0).toLocaleString()}
                 </p>
               </div>
             </div>
@@ -231,9 +122,9 @@ export function AdminContent() {
             <div className="flex items-center gap-3">
               <HardDrive className="h-5 w-5 text-blue-500" />
               <div>
-                <p className="text-xs text-slate-400">Total Storage</p>
+                <p className="text-xs text-slate-400">Total Content</p>
                 <p className="text-xl font-bold text-white">
-                  {MOCK_CONTENT_STATS.totalStorage}
+                  {statsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : totalContent.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -247,7 +138,7 @@ export function AdminContent() {
               <div>
                 <p className="text-xs text-slate-400">Verified</p>
                 <p className="text-xl font-bold text-white">
-                  {MOCK_CONTENT_STATS.verified.toLocaleString()}
+                  {statsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (stats?.verifiedVideos ?? 0).toLocaleString()}
                 </p>
               </div>
             </div>
@@ -261,7 +152,7 @@ export function AdminContent() {
               <div>
                 <p className="text-xs text-slate-400">Pending</p>
                 <p className="text-xl font-bold text-white">
-                  {MOCK_CONTENT_STATS.pendingVerification}
+                  {statsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (stats?.pendingVerifications ?? 0)}
                 </p>
               </div>
             </div>
@@ -275,7 +166,7 @@ export function AdminContent() {
               <div>
                 <p className="text-xs text-slate-400">Processing</p>
                 <p className="text-xl font-bold text-white">
-                  {MOCK_CONTENT_STATS.processingQueue}
+                  {statsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 0}
                 </p>
               </div>
             </div>
@@ -289,7 +180,7 @@ export function AdminContent() {
               <div>
                 <p className="text-xs text-slate-400">Failed</p>
                 <p className="text-xl font-bold text-white">
-                  {MOCK_CONTENT_STATS.failed}
+                  {statsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : (stats?.failedVerifications ?? 0)}
                 </p>
               </div>
             </div>
@@ -327,154 +218,124 @@ export function AdminContent() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search content by title or owner..."
+                placeholder="Search content by title..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                 className="w-full rounded-lg border border-slate-600 bg-slate-700 py-2 pl-10 pr-4 text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none"
               />
             </div>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
               className="rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
             >
               <option value="all">All Status</option>
-              <option value="verified">Verified</option>
-              <option value="pending">Pending</option>
+              <option value="ready">Ready</option>
               <option value="processing">Processing</option>
+              <option value="uploading">Uploading</option>
               <option value="failed">Failed</option>
-            </select>
-            <select
-              value={nftFilter}
-              onChange={(e) => setNftFilter(e.target.value)}
-              className="rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-white focus:border-blue-500 focus:outline-none"
-            >
-              <option value="all">All Content</option>
-              <option value="nft">NFT Only</option>
-              <option value="non-nft">Non-NFT</option>
             </select>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {filteredContent.map((content) => (
-              <div
-                key={content.id}
-                className={`rounded-lg border p-4 ${
-                  content.status === 'failed'
-                    ? 'border-red-500/30 bg-red-500/5'
-                    : 'border-slate-700 bg-slate-700/30'
-                }`}
-              >
-                <div className="flex items-start gap-4">
-                  <input
-                    type="checkbox"
-                    checked={selectedContent.includes(content.id)}
-                    onChange={() => toggleContentSelection(content.id)}
-                    className="mt-4 h-4 w-4 rounded border-slate-500 bg-slate-600"
-                  />
-                  <div className="relative h-20 w-36 flex-shrink-0 overflow-hidden rounded bg-slate-700">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Video className="h-8 w-8 text-slate-500" />
+          {contentLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+            </div>
+          ) : content.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Video className="h-12 w-12 text-slate-500 mb-4" />
+              <p className="text-slate-400">No content found</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {content.map((item: any) => (
+                <div
+                  key={item.id}
+                  className={`rounded-lg border p-4 ${
+                    item.status === 'failed'
+                      ? 'border-red-500/30 bg-red-500/5'
+                      : 'border-slate-700 bg-slate-700/30'
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedContent.includes(item.id)}
+                      onChange={() => toggleContentSelection(item.id)}
+                      className="mt-4 h-4 w-4 rounded border-slate-500 bg-slate-600"
+                    />
+                    <div className="relative h-20 w-36 flex-shrink-0 overflow-hidden rounded bg-slate-700">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Video className="h-8 w-8 text-slate-500" />
+                      </div>
                     </div>
-                    {content.duration && (
-                      <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1.5 py-0.5 text-xs text-white">
-                        {content.duration}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="font-medium text-white truncate">{content.title}</h4>
-                      {getStatusBadge(content.status)}
-                      {content.isNFT && (
-                        <Badge className="bg-purple-500/10 text-purple-400">
-                          NFT #{content.nftTokenId}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="mt-1 flex items-center gap-4 text-sm">
-                      <span className="text-slate-400">
-                        <User className="mr-1 inline h-3 w-3" />
-                        <span
-                          className={content.ownerVerified ? 'text-blue-400' : 'text-slate-300'}
-                        >
-                          {content.owner}
-                        </span>
-                        {content.ownerVerified && (
-                          <CheckCircle className="ml-1 inline h-3 w-3 text-blue-400" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="font-medium text-white truncate">{item.title}</h4>
+                        {getStatusBadge(item.status)}
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                        {item.file_size && (
+                          <span>
+                            <HardDrive className="mr-1 inline h-3 w-3" />
+                            {formatFileSize(item.file_size)}
+                          </span>
                         )}
-                      </span>
-                    </div>
-                    <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                      <span>
-                        <HardDrive className="mr-1 inline h-3 w-3" />
-                        {content.size}
-                      </span>
-                      <span>
-                        <Eye className="mr-1 inline h-3 w-3" />
-                        {content.views.toLocaleString()} views
-                      </span>
-                      <span>
-                        <Calendar className="mr-1 inline h-3 w-3" />
-                        {content.createdAt}
-                      </span>
-                      {content.hash && (
-                        <span className="font-mono">
-                          <Hash className="mr-1 inline h-3 w-3" />
-                          {content.hash}
+                        <span>
+                          <Calendar className="mr-1 inline h-3 w-3" />
+                          {formatRelativeTime(item.created_at)}
                         </span>
-                      )}
-                      {content.ipfsCid && (
-                        <span className="font-mono">
-                          <Link className="mr-1 inline h-3 w-3" />
-                          {content.ipfsCid}
-                        </span>
-                      )}
+                        {item.mime_type && (
+                          <span className="font-mono">
+                            {item.mime_type}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    {content.status === 'failed' && content.failReason && (
-                      <p className="mt-2 text-sm text-red-400">
-                        <AlertTriangle className="mr-1 inline h-3 w-3" />
-                        {content.failReason}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4 text-slate-400" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <MoreVertical className="h-4 w-4 text-slate-400" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4 text-slate-400" />
+                      </Button>
+                      <Button variant="ghost" size="sm">
+                        <MoreVertical className="h-4 w-4 text-slate-400" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Pagination */}
-          <div className="mt-6 flex items-center justify-between">
-            <p className="text-sm text-slate-400">
-              Showing {filteredContent.length} of {MOCK_CONTENT.length} items
-            </p>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="border-slate-600" disabled>
-                Previous
-              </Button>
-              <Button variant="outline" size="sm" className="border-slate-600 bg-blue-600">
-                1
-              </Button>
-              <Button variant="outline" size="sm" className="border-slate-600">
-                2
-              </Button>
-              <Button variant="outline" size="sm" className="border-slate-600">
-                3
-              </Button>
-              <Button variant="outline" size="sm" className="border-slate-600">
-                Next
-              </Button>
+          {!contentLoading && totalContent > 20 && (
+            <div className="mt-6 flex items-center justify-between">
+              <p className="text-sm text-slate-400">
+                Showing {content.length} of {totalContent} items
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-slate-600"
+                  disabled={page <= 1}
+                  onClick={() => setPage(page - 1)}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-slate-400">Page {page}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-slate-600"
+                  disabled={page * 20 >= totalContent}
+                  onClick={() => setPage(page + 1)}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>
